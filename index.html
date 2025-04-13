@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.google.com; frame-src 'self' https: https://*.firebaseapp.com https://*.google.com https://www.youtube.com">
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
+    <title>Black YT</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-left">
+            <i class="material-icons menu-icon">menu</i>
+            <img src="images/logo.png" class="logo" alt="Black YT">
+        </div>
+        <div class="nav-middle">
+            <div class="search-box">
+                <input type="text" placeholder="Search">
+                <button><i class="material-icons">search</i></button>
+            </div>
+        </div>
+        <div class="nav-right">
+            <button id="auth-button" class="auth-button">
+                <i class="material-icons">account_circle</i>
+                <span>Sign In</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="shortcut-links">
+                <a href="#" class="nav-link" data-page="home">
+                    <i class="material-icons">home</i>
+                    <p>Home</p>
+                </a>
+                <a href="#" class="nav-link" data-page="trending">
+                    <i class="material-icons">whatshot</i>
+                    <p>Trending</p>
+                </a>
+                <a href="#" class="nav-link protected" data-page="subscriptions">
+                    <i class="material-icons">subscriptions</i>
+                    <p>Subscriptions</p>
+                </a>
+                <hr>
+                <a href="#" class="nav-link protected" data-page="history">
+                    <i class="material-icons">history</i>
+                    <p>History</p>
+                </a>
+                <a href="#" class="nav-link protected" data-page="your-videos">
+                    <i class="material-icons">play_circle_outline</i>
+                    <p>Your Videos</p>
+                </a>
+                <a href="#" class="nav-link protected" data-page="watch-later">
+                    <i class="material-icons">watch_later</i>
+                    <p>Watch Later</p>
+                </a>
+                <a href="#" class="nav-link protected" data-page="liked">
+                    <i class="material-icons">thumb_up</i>
+                    <p>Liked Videos</p>
+                </a>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content">
+            <div id="video-container" class="video-grid"></div>
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Player -->
+    <div id="video-player-container" class="video-player-container hidden">
+        <div class="player-wrapper">
+            <div id="player"></div>
+            <button id="close-player" class="close-btn">
+                <i class="material-icons">close</i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Sign In</h2>
+            <p>Sign in to access all features</p>
+            <button id="google-sign-in" class="google-btn">
+                <img src="https://www.google.com/favicon.ico" alt="Google">
+                Sign in with Google
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="config.js"></script>
+    <script type="module" src="script.js"></script>
+</body>
+</html>
