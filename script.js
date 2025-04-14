@@ -1,14 +1,10 @@
-// Import configuration and Firebase
+// Import configuration
 import { YOUTUBE_CONFIG } from './config.js';
-import { auth, provider, signInWithPopup, onAuthStateChanged, signOut } from './firebase-config.js';
 
 // DOM Elements
 const videoContainer = document.getElementById('video-container');
 const videoPlayerContainer = document.getElementById('video-player-container');
 const closePlayerBtn = document.getElementById('close-player');
-const authButton = document.getElementById('auth-button');
-const authModal = document.getElementById('auth-modal');
-const googleSignInBtn = document.getElementById('google-sign-in');
 const searchInput = document.querySelector('.search-box input');
 const searchButton = document.querySelector('.search-box button');
 const loadingSpinner = document.getElementById('loading');
@@ -23,26 +19,13 @@ const appState = {
 
 // Load watch history from storage
 function loadWatchHistory() {
-    const user = auth.currentUser;
-    if (user) {
-        // If user is logged in, load from Firebase (implement later)
-        return [];
-    } else {
-        // Load from local storage
-        const history = localStorage.getItem('watchHistory');
-        return history ? JSON.parse(history) : [];
-    }
+    const history = localStorage.getItem('watchHistory');
+    return history ? JSON.parse(history) : [];
 }
 
 // Save watch history to storage
 function saveWatchHistory() {
-    const user = auth.currentUser;
-    if (user) {
-        // If user is logged in, save to Firebase (implement later)
-    } else {
-        // Save to local storage
-        localStorage.setItem('watchHistory', JSON.stringify(appState.watchHistory));
-    }
+    localStorage.setItem('watchHistory', JSON.stringify(appState.watchHistory));
 }
 
 // Add video to watch history
@@ -365,6 +348,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.querySelector('.search-box input');
     const searchButton = document.querySelector('.search-box button');
 
+    // Add region selector listener
+    const regionSelect = document.getElementById('region-select');
+    if (regionSelect) {
+        regionSelect.addEventListener('change', (e) => {
+            const selectedRegion = e.target.value;
+            console.log('Region changed to:', selectedRegion);
+            // Close video player if open
+            closeVideoPlayer();
+            // Fetch videos for selected region
+            fetchTrendingVideos(selectedRegion);
+        });
+    }
+
     // Add logo click handler
     const logoLink = document.querySelector('.logo-link');
     if (logoLink) {
@@ -415,8 +411,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Make searchVideos available globally
+// Make functions globally available
 window.searchVideos = searchVideos;
+window.fetchTrendingVideos = fetchTrendingVideos;
+window.playVideo = playVideo;
+window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
 
 async function fetchVideoStatistics(videoId, videoCard) {
     try {
@@ -841,10 +840,6 @@ function displayHistory() {
         `;
     });
 }
-
-// Make functions globally available
-window.playVideo = playVideo;
-window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
 
 // Initial Load
 fetchTrendingVideos('US');

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.google.com https://*.doubleclick.net http://localhost:* ws://localhost:*; frame-src 'self' https: https://*.firebaseapp.com https://*.google.com https://www.youtube.com; frame-ancestors 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob:; connect-src 'self' https://*.googleapis.com https://*.google.com https://*.doubleclick.net http://localhost:* ws://localhost:*; frame-src 'self' https: https://www.youtube.com; frame-ancestors 'self';">
     <meta http-equiv="Cross-Origin-Opener-Policy" content="unsafe-none">
     <title>Black YT</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -39,10 +39,7 @@
             </select>
         </div>
         <div class="nav-right">
-            <button id="auth-button" class="auth-button">
-                <i class="material-icons">account_circle</i>
-                <span>Sign In</span>
-            </button>
+            <!-- Removed sign-in button -->
         </div>
     </nav>
 
@@ -60,22 +57,6 @@
                     <p>Trending</p>
                 </a>
                 <hr>
-                <a href="#" class="nav-link protected" data-page="history">
-                    <i class="material-icons">history</i>
-                    <p>History</p>
-                </a>
-                <a href="#" class="nav-link protected" data-page="your-videos">
-                    <i class="material-icons">play_circle_outline</i>
-                    <p>Your Videos</p>
-                </a>
-                <a href="#" class="nav-link protected" data-page="watch-later">
-                    <i class="material-icons">watch_later</i>
-                    <p>Watch Later</p>
-                </a>
-                <a href="#" class="nav-link protected" data-page="liked">
-                    <i class="material-icons">thumb_up</i>
-                    <p>Liked Videos</p>
-                </a>
             </div>
             <div class="sidebar-images">
                 <a href="https://www.example.com" target="_blank" class="sidebar-image-link">
@@ -152,22 +133,9 @@
         </div>
     </div>
 
-    <!-- Auth Modal -->
-    <div id="auth-modal" class="modal hidden">
-        <div class="modal-content">
-            <h2>Sign In</h2>
-            <p>Sign in to access all features</p>
-            <button id="google-sign-in" class="google-btn">
-                <img src="https://www.google.com/favicon.ico" alt="Google">
-                Sign in with Google
-            </button>
-        </div>
-    </div>
-
     <!-- Scripts -->
     <script src="https://www.youtube.com/iframe_api"></script>
     <script type="module" src="config.js"></script>
-    <script type="module" src="firebase-config.js"></script>
     <script type="module" src="script.js"></script>
 </body>
 </html>
