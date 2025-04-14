@@ -5,46 +5,52 @@ const container = document.querySelector('.container');
 const content = document.querySelector('.content');
 
 // State
-let isSidebarOpen = true;
+let isSidebarOpen = false;
+let overlayTimeout = null;
 
 // Toggle sidebar function
 function toggleSidebar() {
     isSidebarOpen = !isSidebarOpen;
     
-    // Add/remove classes for animation
-    sidebar.classList.toggle('collapsed');
-    content.classList.toggle('expanded');
-    
-    // Handle mobile vs desktop view differently
-    if (window.innerWidth <= 768) {
+    if (window.innerWidth <= 600) {
+        // Mobile view
         if (isSidebarOpen) {
-            sidebar.style.width = '100%';
-            sidebar.style.transform = 'translateX(0)';
-            content.style.marginLeft = '0';
+            // Prevent body scroll when sidebar is open
+            document.body.style.overflow = 'hidden';
+            
+            sidebar.classList.add('active');
+            // Add overlay to prevent interaction with content
+            const overlay = document.createElement('div');
+            overlay.className = 'sidebar-overlay';
+            document.body.appendChild(overlay);
+            
+            // Add active class after a small delay to allow for transition
+            requestAnimationFrame(() => {
+                overlay.classList.add('active');
+            });
+            
+            overlay.addEventListener('click', () => {
+                toggleSidebar();
+            });
         } else {
-            sidebar.style.width = '100%';
-            sidebar.style.transform = 'translateX(-100%)';
-            content.style.marginLeft = '0';
+            document.body.style.overflow = '';
+            sidebar.classList.remove('active');
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (overlay) {
+                overlay.classList.remove('active');
+                // Remove overlay after transition
+                clearTimeout(overlayTimeout);
+                overlayTimeout = setTimeout(() => {
+                    if (overlay.parentNode) {
+                        document.body.removeChild(overlay);
+                    }
+                }, 300);
+            }
         }
     } else {
-        sidebar.style.transform = 'translateX(0)';
-        if (!isSidebarOpen) {
-            sidebar.style.width = '70px';
-            content.style.marginLeft = '70px';
-            
-            // Hide text in sidebar links
-            document.querySelectorAll('.nav-link span').forEach(span => {
-                span.style.display = 'none';
-            });
-        } else {
-            sidebar.style.width = '250px';
-            content.style.marginLeft = '250px';
-            
-            // Show text in sidebar links
-            document.querySelectorAll('.nav-link span').forEach(span => {
-                span.style.display = 'block';
-            });
-        }
+        // Desktop view
+        sidebar.classList.toggle('collapsed');
+        content.style.marginLeft = isSidebarOpen ? '250px' : '70px';
     }
 }
 
@@ -53,30 +59,38 @@ menuIcon.addEventListener('click', toggleSidebar);
 
 // Handle responsive behavior
 function handleResize() {
-    if (window.innerWidth <= 768) {
-        sidebar.style.width = '100%';
+    if (window.innerWidth <= 600) {
+        // Mobile view
+        sidebar.classList.remove('collapsed');
         content.style.marginLeft = '0';
-        content.style.marginBottom = '60px';
         if (!isSidebarOpen) {
-            sidebar.style.transform = 'translateX(-100%)';
-        } else {
-            sidebar.style.transform = 'translateX(0)';
+            sidebar.classList.remove('active');
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (overlay) {
+                document.body.removeChild(overlay);
+            }
         }
+        document.body.style.overflow = '';
     } else {
-        sidebar.style.transform = 'translateX(0)';
-        if (isSidebarOpen) {
-            sidebar.style.width = '250px';
-            content.style.marginLeft = '250px';
-        } else {
-            sidebar.style.width = '70px';
-            content.style.marginLeft = '70px';
+        // Desktop view
+        sidebar.classList.remove('active');
+        content.style.marginLeft = isSidebarOpen ? '250px' : '70px';
+        const overlay = document.querySelector('.sidebar-overlay');
+        if (overlay) {
+            document.body.removeChild(overlay);
         }
-        content.style.marginBottom = '0';
+        document.body.style.overflow = '';
     }
 }
 
 // Listen for window resize
 window.addEventListener('resize', handleResize);
+
+// Cleanup on page unload
+window.addEventListener('unload', () => {
+    clearTimeout(overlayTimeout);
+    document.body.style.overflow = '';
+});
 
 // Initial setup
 handleResize();
