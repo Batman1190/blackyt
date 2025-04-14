@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.google.com https://*.doubleclick.net http://localhost:* ws://localhost:*; frame-src 'self' https: https://*.firebaseapp.com https://*.google.com https://www.youtube.com">
-    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.google.com https://*.doubleclick.net http://localhost:* ws://localhost:*; frame-src 'self' https: https://*.firebaseapp.com https://*.google.com https://www.youtube.com; frame-ancestors 'self';">
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="unsafe-none">
     <title>Black YT</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -91,6 +91,15 @@
                     <span>Movies</span>
                 </a>
             </div>
+            <div class="sidebar-tiktok">
+                <p class="tiktok-tagline">Keep this site alive by shopping at my TikTok showcase — click the TikTok below!</p>
+                <a href="https://www.tiktok.com/@glowandcare1190" target="_blank" class="sidebar-image-link tiktok-link">
+                    <div class="tiktok-logo-wrapper">
+                        <i class="fab fa-tiktok"></i>
+                    </div>
+                    <span>@glowandcare1190</span>
+                </a>
+            </div>
         </div>
 
         <!-- Content Area -->
@@ -157,8 +166,8 @@
 
     <!-- Scripts -->
     <script src="https://www.youtube.com/iframe_api"></script>
-    <script type="module" src="firebase-config.js"></script>
     <script type="module" src="config.js"></script>
+    <script type="module" src="firebase-config.js"></script>
     <script type="module" src="script.js"></script>
 </body>
 </html>

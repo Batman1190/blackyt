@@ -35,4 +35,13 @@ provider.setCustomParameters({
     prompt: 'select_account'
 });
 
-export { auth, provider, signInWithPopup, onAuthStateChanged, signOut };
+// Export the configurations and initialized services
+export {
+    firebaseConfig,
+    app,
+    auth,
+    provider,
+    signInWithPopup,
+    onAuthStateChanged,
+    signOut
+};

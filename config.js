@@ -1,37 +1,32 @@
 // YouTube API Configuration
-import apiKeyRotator from './youtube-api.js';
-
-// Initialize API keys
-const API_KEYS = [
+const YOUTUBE_API_KEYS = [
     'AIzaSyBRB8bXp-UFdoNFhTqh9n2hWdthpm--gXk',
     'AIzaSyBi9XME_hKIdmFyKT2sX9Qzq-YW4uwaPGc',
     'AIzaSyAaT_fn6jzNLUjee7n7hQIJAdjvQiKHSTU',
     'AIzaSyD0ZhRR292c95yMkSx-ZPWtsGL-FkwEH2Y',
-    'AIzaSyB0z2xXRZX5dh8tMw3PZh9oqfSGgwiWx-U'
+    'AIzaSyB0z2xXRZX5dh8tMw3PZh9oqfSGgwiWx-U',
+    'AIzaSyByQDjEkBdrbJqi3O35UUyOEgGrEqImoXU',
+    'AIzaSyA4iPnRBOkNcVnG6i2Osdplr-6KOOidJso'
 ];
 
-// Add API keys to the rotator
-API_KEYS.forEach(key => {
-    try {
-        apiKeyRotator.addAPIKey(key.trim());
-    } catch (error) {
-        console.warn(`Failed to add API key: ${error.message}`);
-    }
-});
+let currentKeyIndex = 0;
 
-// Export configuration
 export const YOUTUBE_CONFIG = {
-    getAPIKey: () => {
-        try {
-            return apiKeyRotator.getKey();
-        } catch (error) {
-            console.error('No YouTube API keys available');
-            return '';
-        }
+    getAPIKey() {
+        const key = YOUTUBE_API_KEYS[currentKeyIndex];
+        // Rotate to next key
+        currentKeyIndex = (currentKeyIndex + 1) % YOUTUBE_API_KEYS.length;
+        return key;
+    },
+    
+    rotateKey() {
+        // Force rotation to next key
+        currentKeyIndex = (currentKeyIndex + 1) % YOUTUBE_API_KEYS.length;
+        return YOUTUBE_API_KEYS[currentKeyIndex];
+    },
+    
+    // Get total number of available keys
+    getKeyCount() {
+        return YOUTUBE_API_KEYS.length;
     }
 };
-
-// Validate configuration
-if (API_KEYS.length === 0) {
-    console.error('No YouTube API keys configured.');
-}

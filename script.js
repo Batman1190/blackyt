@@ -113,25 +113,159 @@ function formatDate(dateString) {
     return 'Just now';
 }
 
+function formatTimeAgo(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    const months = Math.floor(days / 30);
+    const years = Math.floor(days / 365);
+
+    if (years > 0) return `${years} year${years > 1 ? 's' : ''} ago`;
+    if (months > 0) return `${months} month${months > 1 ? 's' : ''} ago`;
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    return 'Just now';
+}
+
 // YouTube API Functions
-async function fetchTrendingVideos(regionCode = 'US') {
+async function fetchTrendingVideos(region = 'US') {
     try {
-        const apiKey = YOUTUBE_CONFIG.getAPIKey();
-        if (!apiKey) {
-            throw new Error('No YouTube API keys available');
+        const videoContainer = document.getElementById('video-container');
+        if (!videoContainer) return;
+
+        // Show loading state
+        videoContainer.innerHTML = `
+            <div class="loading">
+                <div class="spinner"></div>
+            </div>
+        `;
+
+        let attempts = 0;
+        const maxAttempts = YOUTUBE_CONFIG.getKeyCount();
+
+        while (attempts < maxAttempts) {
+            try {
+                const apiKey = YOUTUBE_CONFIG.getAPIKey();
+                console.log('Trying with API key index:', attempts);
+
+                const response = await fetch(`https://youtube.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails%2Cstatistics&chart=mostPopular&regionCode=${region}&maxResults=24&key=${apiKey}`);
+                
+                if (response.status === 403) {
+                    console.log('API key quota exceeded, trying next key...');
+                    attempts++;
+                    continue;
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Clear loading state
+                videoContainer.innerHTML = '';
+                
+                // Create video grid
+                const videoGrid = document.createElement('div');
+                videoGrid.className = 'video-grid';
+                
+                // Add videos to grid
+                data.items.forEach(video => {
+                    const videoCard = createVideoCard(video);
+                    videoGrid.appendChild(videoCard);
+                });
+                
+                videoContainer.appendChild(videoGrid);
+                return; // Success, exit the function
+            } catch (error) {
+                console.error('Error with current API key:', error);
+                attempts++;
+            }
         }
-        showLoading();
-        const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&maxResults=24&regionCode=${regionCode}&key=${apiKey}`);
-        if (!response.ok) throw new Error('Failed to fetch trending videos');
-        const data = await response.json();
-        displayVideos(data.items);
+
+        // If we get here, all API keys failed
+        throw new Error('All API keys exhausted');
+
     } catch (error) {
         console.error('Error fetching trending videos:', error);
-        showError('Failed to load trending videos. Please try again.');
-    } finally {
-        hideLoading();
+        const videoContainer = document.getElementById('video-container');
+        if (videoContainer) {
+            videoContainer.innerHTML = `
+                <div class="error-message">
+                    <p>Failed to load videos. Please try again later.</p>
+                    <button onclick="fetchTrendingVideos('${region}')" class="retry-button">
+                        Retry
+                    </button>
+                </div>
+            `;
+        }
     }
 }
+
+function createVideoCard(video) {
+    const videoCard = document.createElement('div');
+    videoCard.className = 'video-card';
+    videoCard.innerHTML = `
+        <div class="thumbnail" onclick="playVideo('${video.id}')">
+            <img src="${video.snippet.thumbnails.medium.url}" alt="${escapeHtml(video.snippet.title)}">
+            <div class="play-button">
+                <i class="fas fa-play"></i>
+            </div>
+        </div>
+        <div class="video-info">
+            <div class="channel-icon">
+                <img alt="${escapeHtml(video.snippet.channelTitle)}">
+            </div>
+            <div class="details">
+                <h3>${escapeHtml(video.snippet.title)}</h3>
+                <span class="channel-name">${escapeHtml(video.snippet.channelTitle)}</span>
+                <div class="video-meta">
+                    <span class="views">Loading views...</span>
+                    <span class="separator">•</span>
+                    <span class="time">${formatTimeAgo(video.snippet.publishedAt)}</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Fetch additional video data
+    fetchVideoStatistics(video.id, videoCard);
+    fetchChannelIcon(video.snippet.channelId, videoCard);
+    
+    return videoCard;
+}
+
+// Add styles for error message and retry button
+const style = document.createElement('style');
+style.textContent = `
+    .error-message {
+        text-align: center;
+        padding: 20px;
+        color: var(--primary-color);
+    }
+    
+    .retry-button {
+        margin-top: 15px;
+        padding: 8px 16px;
+        background: var(--hover-color);
+        border: none;
+        border-radius: 20px;
+        color: var(--primary-color);
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .retry-button:hover {
+        background: var(--border-color);
+    }
+`;
+document.head.appendChild(style);
 
 async function fetchRecommendedVideos() {
     return fetchTrendingVideos('US');
@@ -139,25 +273,150 @@ async function fetchRecommendedVideos() {
 
 async function searchVideos(query) {
     try {
-        const apiKey = YOUTUBE_CONFIG.getAPIKey();
-        if (!apiKey) {
-            throw new Error('No YouTube API keys available');
-        }
+        const videoContainer = document.getElementById('video-container');
+        if (!videoContainer) return;
+
         showLoading();
-        const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=24&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`);
-        if (!response.ok) throw new Error('Search failed');
-        const data = await response.json();
-        displayVideos(data.items);
+        videoContainer.innerHTML = `
+            <div class="loading">
+                <div class="spinner"></div>
+            </div>
+        `;
+
+        let attempts = 0;
+        const maxAttempts = YOUTUBE_CONFIG.getKeyCount();
+
+        while (attempts < maxAttempts) {
+            try {
+                const apiKey = YOUTUBE_CONFIG.getAPIKey();
+                console.log('Searching with API key index:', attempts);
+
+                const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=24&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`);
+                
+                if (response.status === 403) {
+                    console.log('API key quota exceeded, trying next key...');
+                    attempts++;
+                    continue;
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Clear loading state
+                videoContainer.innerHTML = '';
+                
+                // Create video grid
+                const videoGrid = document.createElement('div');
+                videoGrid.className = 'video-grid';
+                
+                // Process and display search results
+                if (data.items && data.items.length > 0) {
+                    data.items.forEach(item => {
+                        // Convert search result format to video format
+                        const video = {
+                            id: item.id.videoId,
+                            snippet: item.snippet
+                        };
+                        const videoCard = createVideoCard(video);
+                        videoGrid.appendChild(videoCard);
+                    });
+                    videoContainer.appendChild(videoGrid);
+                } else {
+                    videoContainer.innerHTML = '<div class="no-results">No videos found</div>';
+                }
+                
+                hideLoading();
+                return; // Success, exit the function
+            } catch (error) {
+                console.error('Error with current API key:', error);
+                attempts++;
+            }
+        }
+
+        // If we get here, all API keys failed
+        throw new Error('All API keys exhausted');
+
     } catch (error) {
         console.error('Search error:', error);
-        const errorMessage = error.message === 'No YouTube API keys available' 
-            ? 'No YouTube API keys are available. Please check your configuration.'
-            : 'Failed to search videos. Please try again.';
-        showError(errorMessage);
-    } finally {
         hideLoading();
+        const errorMessage = error.message === 'All API keys exhausted'
+            ? 'Unable to perform search. Please try again later.'
+            : 'Failed to search videos. Please try again.';
+        
+        if (videoContainer) {
+            videoContainer.innerHTML = `
+                <div class="error-message">
+                    <p>${errorMessage}</p>
+                    <button onclick="searchVideos('${encodeURIComponent(query)}')" class="retry-button">
+                        Retry Search
+                    </button>
+                </div>
+            `;
+        }
     }
 }
+
+// Add event listeners for search
+document.addEventListener('DOMContentLoaded', function() {
+    // Existing search listeners
+    const searchInput = document.querySelector('.search-box input');
+    const searchButton = document.querySelector('.search-box button');
+
+    // Add logo click handler
+    const logoLink = document.querySelector('.logo-link');
+    if (logoLink) {
+        logoLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Close video player if open
+            closeVideoPlayer();
+            // Load trending videos
+            fetchTrendingVideos('US');
+        });
+    }
+
+    // Add back button listener
+    const backButton = document.getElementById('back-to-home');
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            closeVideoPlayer();
+            // Optionally refresh the video list
+            fetchTrendingVideos('US');
+        });
+    }
+
+    // Close player button listener
+    const closePlayerBtn = document.getElementById('close-player');
+    if (closePlayerBtn) {
+        closePlayerBtn.addEventListener('click', () => {
+            closeVideoPlayer();
+        });
+    }
+
+    // Existing search listeners
+    if (searchButton && searchInput) {
+        searchButton.addEventListener('click', () => {
+            const query = searchInput.value.trim();
+            if (query) {
+                searchVideos(query);
+            }
+        });
+
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const query = searchInput.value.trim();
+                if (query) {
+                    searchVideos(query);
+                }
+            }
+        });
+    }
+});
+
+// Make searchVideos available globally
+window.searchVideos = searchVideos;
 
 async function fetchVideoStatistics(videoId, videoCard) {
     try {
@@ -181,17 +440,39 @@ async function fetchChannelIcon(channelId, videoCard) {
     try {
         const apiKey = YOUTUBE_CONFIG.getAPIKey();
         if (!apiKey) return;
+
+        const img = videoCard.querySelector('.channel-icon img');
+        if (!img) return;
+
+        // Set a loading state
+        img.style.opacity = '0';
+        
         const response = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${channelId}&key=${apiKey}`);
         if (!response.ok) throw new Error('Failed to fetch channel data');
+        
         const data = await response.json();
-        if (data.items && data.items[0]) {
+        if (data.items && data.items[0] && data.items[0].snippet.thumbnails) {
             const iconUrl = data.items[0].snippet.thumbnails.default.url;
-            const img = videoCard.querySelector('.channel-icon img');
-            img.src = iconUrl;
-            img.classList.remove('loading');
+            
+            // Create a new image to preload
+            const tempImg = new Image();
+            tempImg.onload = () => {
+                img.src = iconUrl;
+                img.classList.add('loaded');
+                img.style.opacity = '1';
+            };
+            tempImg.onerror = () => {
+                console.error('Failed to load channel icon:', iconUrl);
+                img.style.opacity = '1';
+            };
+            tempImg.src = iconUrl;
         }
     } catch (error) {
         console.error('Error fetching channel icon:', error);
+        const img = videoCard.querySelector('.channel-icon img');
+        if (img) {
+            img.style.opacity = '1';
+        }
     }
 }
 
@@ -447,9 +728,16 @@ function closeVideoPlayer() {
     if (player && player.stopVideo) {
         player.stopVideo();
     }
+    const videoPlayerContainer = document.getElementById('video-player-container');
     if (videoPlayerContainer) {
         videoPlayerContainer.classList.add('hidden');
         document.body.style.overflow = 'auto';
+    }
+    // Reset player state
+    isPlaying = false;
+    const playPauseBtn = document.querySelector('.play-pause');
+    if (playPauseBtn) {
+        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
     }
 }
 
@@ -554,224 +842,9 @@ function displayHistory() {
     });
 }
 
-// Event Listeners
-document.addEventListener('DOMContentLoaded', function() {
-    // Load YouTube API
-    loadYouTubeAPI();
-    
-    // Load watch history
-    appState.watchHistory = loadWatchHistory();
-
-    // Close video player button
-    const closePlayerBtn = document.getElementById('close-player');
-    if (closePlayerBtn) {
-        closePlayerBtn.addEventListener('click', closeVideoPlayer);
-    }
-
-    // Back button
-    const backButton = document.getElementById('back-to-home');
-    if (backButton) {
-        backButton.addEventListener('click', closeVideoPlayer);
-    }
-
-    // Video card click handler
-    const videoContainer = document.getElementById('video-container');
-    if (videoContainer) {
-        videoContainer.addEventListener('click', function(event) {
-            const videoCard = event.target.closest('.video-card');
-            if (videoCard) {
-                const videoId = videoCard.dataset.videoId;
-                if (videoId) {
-                    console.log('Video card clicked:', videoId);
-                    playVideo(videoId);
-                }
-            }
-        });
-    }
-
-    // Home button
-    const homeButton = document.querySelector('[data-page="home"]');
-    if (homeButton) {
-        homeButton.addEventListener('click', function(e) {
-            e.preventDefault();
-            fetchRecommendedVideos();
-        });
-    }
-
-    // Search functionality
-    const searchButton = document.querySelector('.search-box button');
-    const searchInput = document.querySelector('.search-box input');
-    
-    if (searchButton && searchInput) {
-        searchButton.addEventListener('click', () => {
-            const query = searchInput.value.trim();
-            if (query) {
-                appState.searchQuery = query;
-                searchVideos(query);
-            }
-        });
-
-        searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                const query = searchInput.value.trim();
-                if (query) {
-                    appState.searchQuery = query;
-                    searchVideos(query);
-                }
-            }
-        });
-    }
-
-    // Region selector
-    const regionSelect = document.getElementById('region-select');
-    if (regionSelect) {
-        regionSelect.addEventListener('change', (e) => {
-            const selectedRegion = e.target.value;
-            fetchTrendingVideos(selectedRegion);
-        });
-    }
-
-    // Handle logo click to load home page
-    const logoLink = document.querySelector('.logo-link');
-    if (logoLink) {
-        logoLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            // Close video player if open
-            if (videoPlayerContainer) {
-                videoPlayerContainer.classList.add('hidden');
-            }
-            // Reset to home page content
-            loadHomePage();
-        });
-    }
-
-    // Handle sign-in button click
-    const signInButton = document.getElementById('auth-button');
-    if (signInButton) {
-        signInButton.addEventListener('click', function() {
-            const authModal = document.getElementById('auth-modal');
-            if (authModal) {
-                authModal.classList.remove('hidden');
-            }
-        });
-    }
-
-    // Handle Google sign-in
-    const googleSignInBtn = document.getElementById('google-sign-in');
-    if (googleSignInBtn) {
-        googleSignInBtn.addEventListener('click', function() {
-            signInWithPopup(auth, provider)
-                .then((result) => {
-                    console.log('Sign-in successful:', result.user);
-                    const authModal = document.getElementById('auth-modal');
-                    if (authModal) {
-                        authModal.classList.add('hidden');
-                    }
-                    updateAuthUI(result.user);
-                })
-                .catch((error) => {
-                    console.error('Sign-in error:', error);
-                    showError('Failed to sign in. Please try again.');
-                });
-        });
-    }
-
-    // Handle sign-out
-    const signOutButton = document.getElementById('sign-out');
-    if (signOutButton) {
-        signOutButton.addEventListener('click', function() {
-            signOut(auth)
-                .then(() => {
-                    console.log('Sign-out successful');
-                    updateAuthUI(null);
-                })
-                .catch((error) => {
-                    console.error('Sign-out error:', error);
-                    showError('Failed to sign out. Please try again.');
-                });
-        });
-    }
-
-    // Update auth UI based on user state
-    function updateAuthUI(user) {
-        const signInButton = document.getElementById('auth-button');
-        const signOutButton = document.getElementById('sign-out');
-        const userProfile = document.getElementById('user-profile');
-        
-        if (user) {
-            // User is signed in
-            if (signInButton) signInButton.classList.add('hidden');
-            if (signOutButton) signOutButton.classList.remove('hidden');
-            if (userProfile) {
-                userProfile.classList.remove('hidden');
-                const profileImage = userProfile.querySelector('img');
-                if (profileImage) {
-                    profileImage.src = user.photoURL || 'images/default-avatar.png';
-                }
-            }
-        } else {
-            // User is signed out
-            if (signInButton) signInButton.classList.remove('hidden');
-            if (signOutButton) signOutButton.classList.add('hidden');
-            if (userProfile) userProfile.classList.add('hidden');
-        }
-    }
-
-    // Listen for auth state changes
-    onAuthStateChanged(auth, (user) => {
-        updateAuthUI(user);
-    });
-
-    // Handle trending button click
-    const trendingButton = document.querySelector('[data-page="trending"]');
-    if (trendingButton) {
-        trendingButton.addEventListener('click', function(e) {
-            e.preventDefault();
-            // Close video player if open
-            if (videoPlayerContainer) {
-                videoPlayerContainer.classList.add('hidden');
-            }
-            // Load trending videos
-            fetchTrendingVideos('US');
-        });
-    }
-});
-
 // Make functions globally available
 window.playVideo = playVideo;
 window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
 
 // Initial Load
 fetchTrendingVideos('US');
-
-function showPlayerControls() {
-    const controls = document.querySelector('.player-controls');
-    if (controls) {
-        controls.style.opacity = '1';
-        controls.style.pointerEvents = 'auto';
-    }
-}
-
-function hidePlayerControls() {
-    const controls = document.querySelector('.player-controls');
-    if (controls) {
-        controls.style.opacity = '0';
-        controls.style.pointerEvents = 'none';
-    }
-}
-
-function loadHomePage() {
-    // Clear any existing content
-    const videoContainer = document.getElementById('video-container');
-    if (!videoContainer) return;
-    
-    // Add loading indicator
-    videoContainer.innerHTML = `
-        <div class="loading">
-            <div class="spinner"></div>
-        </div>
-    `;
-    
-    // Load trending videos
-    fetchTrendingVideos('US');
-}
