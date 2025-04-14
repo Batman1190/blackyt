@@ -78,6 +78,20 @@
                     <p>Liked Videos</p>
                 </a>
             </div>
+            <div class="sidebar-images">
+                <a href="https://www.example.com" target="_blank" class="sidebar-image-link">
+                    <img src="images/support.png" alt="Support" class="sidebar-image">
+                    <span>Support</span>
+                </a>
+                <a href="https://www.buymeacoffee.com" target="_blank" class="sidebar-image-link">
+                    <img src="images/coffee.png" alt="Buy Me a Coffee" class="sidebar-image">
+                    <span>Buy Me a Coffee</span>
+                </a>
+                <a href="https://mytube.space" target="_blank" class="sidebar-image-link">
+                    <img src="images/movies.png" alt="Movies" class="sidebar-image">
+                    <span>Movies</span>
+                </a>
+            </div>
         </div>
 
         <!-- Content Area -->
@@ -93,6 +107,37 @@
     <div id="video-player-container" class="video-player-container hidden">
         <div class="player-wrapper">
             <div id="player"></div>
+            <div class="player-controls">
+                <div class="control-group">
+                    <button class="control-button play-pause">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <div class="forward-backward">
+                        <button class="control-button backward">
+                            <i class="fas fa-backward"></i>
+                        </button>
+                        <button class="control-button forward">
+                            <i class="fas fa-forward"></i>
+                        </button>
+                    </div>
+                    <div class="time-display">
+                        <span class="current-time">0:00</span> / <span class="total-time">0:00</span>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-bar-fill"></div>
+                </div>
+                <div class="control-group">
+                    <div class="volume-control">
+                        <button class="control-button volume-toggle">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                    </div>
+                    <button class="control-button fullscreen">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
             <button id="back-to-home" class="back-btn">
                 <i class="material-icons">arrow_back</i>
             </button>

@@ -262,10 +262,104 @@ function displayVideos(videos) {
     });
 }
 
-// YouTube Player
+// Video Player
 let player = null;
 let playerReady = false;
 const videoQueue = [];
+
+// Video Player Controls
+let isPlaying = false;
+let currentVolume = 1;
+
+function initializePlayerControls() {
+    const playPauseBtn = document.querySelector('.play-pause');
+    const backwardBtn = document.querySelector('.backward');
+    const forwardBtn = document.querySelector('.forward');
+    const volumeToggle = document.querySelector('.volume-toggle');
+    const progressBar = document.querySelector('.progress-bar');
+    const fullscreenBtn = document.querySelector('.fullscreen');
+    const currentTimeDisplay = document.querySelector('.current-time');
+    const totalTimeDisplay = document.querySelector('.total-time');
+
+    if (!playPauseBtn || !backwardBtn || !forwardBtn || !volumeToggle || !progressBar || !fullscreenBtn) {
+        console.error('Player control elements not found');
+        return;
+    }
+
+    // Play/Pause
+    playPauseBtn.addEventListener('click', () => {
+        if (isPlaying) {
+            player.pauseVideo();
+            playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+        } else {
+            player.playVideo();
+            playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        }
+        isPlaying = !isPlaying;
+    });
+
+    // Forward/Backward (10 seconds)
+    backwardBtn.addEventListener('click', () => {
+        const currentTime = player.getCurrentTime();
+        player.seekTo(currentTime - 10, true);
+    });
+
+    forwardBtn.addEventListener('click', () => {
+        const currentTime = player.getCurrentTime();
+        player.seekTo(currentTime + 10, true);
+    });
+
+    // Volume Control
+    volumeToggle.addEventListener('click', () => {
+        if (currentVolume > 0) {
+            player.setVolume(0);
+            currentVolume = 0;
+            volumeToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
+        } else {
+            player.setVolume(1);
+            currentVolume = 1;
+            volumeToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+        }
+    });
+
+    // Progress Bar
+    progressBar.addEventListener('click', (e) => {
+        const rect = progressBar.getBoundingClientRect();
+        const pos = (e.clientX - rect.left) / rect.width;
+        player.seekTo(pos * player.getDuration(), true);
+    });
+
+    // Fullscreen
+    fullscreenBtn.addEventListener('click', () => {
+        const playerWrapper = document.querySelector('.player-wrapper');
+        if (!document.fullscreenElement) {
+            playerWrapper.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    });
+
+    // Update time display
+    setInterval(() => {
+        if (player && player.getCurrentTime) {
+            const currentTime = player.getCurrentTime();
+            const duration = player.getDuration();
+            
+            currentTimeDisplay.textContent = formatTime(currentTime);
+            totalTimeDisplay.textContent = formatTime(duration);
+            
+            // Update progress bar
+            const progress = (currentTime / duration) * 100;
+            document.querySelector('.progress-bar-fill').style.width = `${progress}%`;
+        }
+    }, 1000);
+}
+
+function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    seconds = Math.floor(seconds % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
 
 // Initialize YouTube Player
 function initYouTubePlayer() {
@@ -329,6 +423,10 @@ function onPlayerReady(event) {
         console.log('Playing queued video:', nextVideo);
         playVideo(nextVideo);
     }
+
+    player = event.target;
+    initializePlayerControls();
+    showPlayerControls();
 }
 
 function onPlayerStateChange(event) {
@@ -345,7 +443,6 @@ function onPlayerError(event) {
     closeVideoPlayer();
 }
 
-// Video Player Controls
 function closeVideoPlayer() {
     if (player && player.stopVideo) {
         player.stopVideo();
@@ -355,16 +452,6 @@ function closeVideoPlayer() {
         document.body.style.overflow = 'auto';
     }
 }
-
-document.getElementById('back-to-home').addEventListener('click', function() {
-    closeVideoPlayer();
-});
-
-// Add home button click handler
-document.querySelector('[data-page="home"]').addEventListener('click', function(e) {
-    e.preventDefault();
-    fetchRecommendedVideos();
-});
 
 function showVideoPlayer() {
     if (videoPlayerContainer) {
@@ -464,8 +551,6 @@ function displayHistory() {
                 </div>
             </div>
         `;
-        
-        historyContainer.appendChild(videoCard);
     });
 }
 
@@ -483,6 +568,12 @@ document.addEventListener('DOMContentLoaded', function() {
         closePlayerBtn.addEventListener('click', closeVideoPlayer);
     }
 
+    // Back button
+    const backButton = document.getElementById('back-to-home');
+    if (backButton) {
+        backButton.addEventListener('click', closeVideoPlayer);
+    }
+
     // Video card click handler
     const videoContainer = document.getElementById('video-container');
     if (videoContainer) {
@@ -497,115 +588,69 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Home button
+    const homeButton = document.querySelector('[data-page="home"]');
+    if (homeButton) {
+        homeButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            fetchRecommendedVideos();
+        });
+    }
+
+    // Search functionality
+    const searchButton = document.querySelector('.search-box button');
+    const searchInput = document.querySelector('.search-box input');
+    
+    if (searchButton && searchInput) {
+        searchButton.addEventListener('click', () => {
+            const query = searchInput.value.trim();
+            if (query) {
+                appState.searchQuery = query;
+                searchVideos(query);
+            }
+        });
+
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const query = searchInput.value.trim();
+                if (query) {
+                    appState.searchQuery = query;
+                    searchVideos(query);
+                }
+            }
+        });
+    }
+
+    // Region selector
+    const regionSelect = document.getElementById('region-select');
+    if (regionSelect) {
+        regionSelect.addEventListener('change', (e) => {
+            const selectedRegion = e.target.value;
+            fetchTrendingVideos(selectedRegion);
+        });
+    }
 });
 
 // Make functions globally available
 window.playVideo = playVideo;
 window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
 
-// Auth State Management
-function updateAuthState(user) {
-    const authButton = document.getElementById('auth-button');
-    const protectedLinks = document.querySelectorAll('.nav-link.protected');
-    const authModal = document.getElementById('auth-modal');
-
-    if (user) {
-        console.log('User is signed in:', user.email);
-        authButton.innerHTML = `
-            <i class="material-icons">account_circle</i>
-            <span>Sign Out</span>
-        `;
-        authButton.onclick = handleSignOut;
-        protectedLinks.forEach(link => {
-            link.classList.remove('disabled');
-        });
-    } else {
-        console.log('User is signed out');
-        authButton.innerHTML = `
-            <i class="material-icons">account_circle</i>
-            <span>Sign In</span>
-        `;
-        authButton.onclick = () => authModal.classList.remove('hidden');
-        protectedLinks.forEach(link => {
-            link.classList.add('disabled');
-        });
-    }
-}
-
-// Auth Event Handlers
-function handleSignIn() {
-    showLoading();
-    signInWithPopup(auth, provider)
-        .then((result) => {
-            console.log('Sign in successful:', result.user);
-            document.getElementById('auth-modal').classList.add('hidden');
-            hideLoading();
-        })
-        .catch((error) => {
-            console.error('Sign in error:', error);
-            let errorMessage = 'Failed to sign in. ';
-            if (error.code === 'auth/popup-blocked') {
-                errorMessage += 'Please allow popups for this site.';
-            } else if (error.code === 'auth/cancelled-popup-request') {
-                errorMessage += 'Sign-in was cancelled.';
-            } else if (error.code === 'auth/network-request-failed') {
-                errorMessage += 'Network error. Please check your connection.';
-            } else if (window.location.hostname === 'localhost') {
-                errorMessage += 'Make sure Firebase emulator is running locally.';
-            }
-            showError(errorMessage);
-            hideLoading();
-        });
-}
-
-function handleSignOut() {
-    showLoading();
-    signOut(auth)
-        .then(() => {
-            console.log('Sign out successful');
-            hideLoading();
-        })
-        .catch((error) => {
-            console.error('Sign out error:', error);
-            showError('Failed to sign out. Please try again.');
-            hideLoading();
-        });
-}
-
-// Initialize Auth State
-onAuthStateChanged(auth, updateAuthState);
-
-// Event Listeners
-document.getElementById('google-sign-in').addEventListener('click', handleSignIn);
-document.querySelector('.menu-icon').addEventListener('click', () => {
-    document.querySelector('.sidebar').classList.toggle('small-sidebar');
-    document.querySelector('.container').classList.toggle('large-container');
-});
-
-// Search Functionality
-searchButton.addEventListener('click', () => {
-    const query = searchInput.value.trim();
-    if (query) {
-        appState.searchQuery = query;
-        searchVideos(query);
-    }
-});
-
-searchInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        const query = searchInput.value.trim();
-        if (query) {
-            appState.searchQuery = query;
-            searchVideos(query);
-        }
-    }
-});
-
-// Region selector event listener
-document.getElementById('region-select').addEventListener('change', (e) => {
-    const selectedRegion = e.target.value;
-    fetchTrendingVideos(selectedRegion);
-});
-
 // Initial Load
 fetchTrendingVideos('US');
+
+function showPlayerControls() {
+    const controls = document.querySelector('.player-controls');
+    if (controls) {
+        controls.style.opacity = '1';
+        controls.style.pointerEvents = 'auto';
+    }
+}
+
+function hidePlayerControls() {
+    const controls = document.querySelector('.player-controls');
+    if (controls) {
+        controls.style.opacity = '0';
+        controls.style.pointerEvents = 'none';
+    }
+}

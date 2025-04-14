@@ -51,6 +51,11 @@ function toggleSidebar() {
         // Desktop view
         sidebar.classList.toggle('collapsed');
         content.style.marginLeft = isSidebarOpen ? '250px' : '70px';
+        
+        // Handle text visibility in sidebar links
+        document.querySelectorAll('.nav-link span, .sidebar-image-link span').forEach(span => {
+            span.style.display = isSidebarOpen ? 'block' : 'none';
+        });
     }
 }
 
