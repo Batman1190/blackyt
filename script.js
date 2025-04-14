@@ -17,8 +17,56 @@ const loadingSpinner = document.getElementById('loading');
 const appState = {
     currentVideo: null,
     searchQuery: '',
-    isLoading: false
+    isLoading: false,
+    watchHistory: []
 };
+
+// Load watch history from storage
+function loadWatchHistory() {
+    const user = auth.currentUser;
+    if (user) {
+        // If user is logged in, load from Firebase (implement later)
+        return [];
+    } else {
+        // Load from local storage
+        const history = localStorage.getItem('watchHistory');
+        return history ? JSON.parse(history) : [];
+    }
+}
+
+// Save watch history to storage
+function saveWatchHistory() {
+    const user = auth.currentUser;
+    if (user) {
+        // If user is logged in, save to Firebase (implement later)
+    } else {
+        // Save to local storage
+        localStorage.setItem('watchHistory', JSON.stringify(appState.watchHistory));
+    }
+}
+
+// Add video to watch history
+function addToHistory(videoId, videoData) {
+    const timestamp = new Date().toISOString();
+    const historyEntry = {
+        videoId,
+        title: videoData.title,
+        thumbnail: videoData.thumbnails?.medium?.url,
+        channelTitle: videoData.channelTitle,
+        watchedAt: timestamp
+    };
+    
+    // Remove if already exists and add to beginning
+    appState.watchHistory = appState.watchHistory.filter(v => v.videoId !== videoId);
+    appState.watchHistory.unshift(historyEntry);
+    
+    // Keep only last 50 videos
+    if (appState.watchHistory.length > 50) {
+        appState.watchHistory.pop();
+    }
+    
+    saveWatchHistory();
+}
 
 // Utility Functions
 function showLoading() {
@@ -334,6 +382,21 @@ function playVideo(videoId) {
     console.log('Attempting to play video:', videoId);
     showLoading();
     
+    // Get video data and add to history
+    const videoCard = document.querySelector(`.video-card[data-video-id="${videoId}"]`);
+    if (videoCard) {
+        const videoData = {
+            title: videoCard.querySelector('.details h3').textContent,
+            thumbnails: {
+                medium: {
+                    url: videoCard.querySelector('.thumbnail img').src
+                }
+            },
+            channelTitle: videoCard.querySelector('.channel-name').textContent
+        };
+        addToHistory(videoId, videoData);
+    }
+    
     if (!playerReady || !player) {
         console.log('Player not ready, queueing video:', videoId);
         videoQueue.push(videoId);
@@ -365,10 +428,54 @@ function loadYouTubeAPI() {
     firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 }
 
+// Display History
+function displayHistory() {
+    const historyContainer = document.getElementById('video-container');
+    historyContainer.innerHTML = '';
+    
+    if (appState.watchHistory.length === 0) {
+        historyContainer.innerHTML = '<div class="no-results">No watch history available</div>';
+        return;
+    }
+    
+    appState.watchHistory.forEach(video => {
+        const videoCard = document.createElement('div');
+        videoCard.className = 'video-card';
+        videoCard.dataset.videoId = video.videoId;
+        videoCard.innerHTML = `
+            <div class="thumbnail">
+                <img src="${video.thumbnail || 'images/placeholder.jpg'}" 
+                     alt="${escapeHtml(video.title)}"
+                     onerror="this.src='images/placeholder.jpg'">
+                <div class="play-button">
+                    <i class="material-icons">play_circle_filled</i>
+                </div>
+            </div>
+            <div class="video-info">
+                <div class="channel-icon">
+                    <img src="images/default-channel.svg" alt="Channel">
+                </div>
+                <div class="details">
+                    <h3>${escapeHtml(video.title)}</h3>
+                    <p class="channel-name">${escapeHtml(video.channelTitle)}</p>
+                    <p class="views-time">
+                        <span class="time">Watched ${formatDate(video.watchedAt)}</span>
+                    </p>
+                </div>
+            </div>
+        `;
+        
+        historyContainer.appendChild(videoCard);
+    });
+}
+
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
     // Load YouTube API
     loadYouTubeAPI();
+    
+    // Load watch history
+    appState.watchHistory = loadWatchHistory();
 
     // Close video player button
     const closePlayerBtn = document.getElementById('close-player');
@@ -436,7 +543,17 @@ function handleSignIn() {
         })
         .catch((error) => {
             console.error('Sign in error:', error);
-            showError('Failed to sign in. Please try again.');
+            let errorMessage = 'Failed to sign in. ';
+            if (error.code === 'auth/popup-blocked') {
+                errorMessage += 'Please allow popups for this site.';
+            } else if (error.code === 'auth/cancelled-popup-request') {
+                errorMessage += 'Sign-in was cancelled.';
+            } else if (error.code === 'auth/network-request-failed') {
+                errorMessage += 'Network error. Please check your connection.';
+            } else if (window.location.hostname === 'localhost') {
+                errorMessage += 'Make sure Firebase emulator is running locally.';
+            }
+            showError(errorMessage);
             hideLoading();
         });
 }
@@ -458,68 +575,12 @@ function handleSignOut() {
 // Initialize Auth State
 onAuthStateChanged(auth, updateAuthState);
 
-// Subscription Handler
-async function handleSubscriptionClick() {
-    if (!auth.currentUser) {
-        document.getElementById('auth-modal').classList.remove('hidden');
-        return;
-    }
-
-    try {
-        showLoading();
-        const apiKey = YOUTUBE_CONFIG.getAPIKey();
-        if (!apiKey) {
-            throw new Error('No YouTube API keys available');
-        }
-
-        const response = await fetch(
-            `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=50&key=${apiKey}`,
-            {
-                headers: {
-                    'Authorization': `Bearer ${auth.currentUser.accessToken}`
-                }
-            }
-        );
-
-        if (!response.ok) throw new Error('Failed to fetch subscriptions');
-        const data = await response.json();
-
-        // Clear existing videos
-        videoContainer.innerHTML = '<h2 class="section-title">Your Subscriptions</h2>';
-
-        // Display subscribed channels
-        data.items.forEach(subscription => {
-            const channel = subscription.snippet;
-            const channelCard = document.createElement('div');
-            channelCard.className = 'channel-card';
-            channelCard.innerHTML = `
-                <div class="channel-thumbnail">
-                    <img src="${channel.thumbnails.medium.url}" alt="${escapeHtml(channel.title)}">
-                </div>
-                <div class="channel-info">
-                    <h3>${escapeHtml(channel.title)}</h3>
-                    <p>${escapeHtml(channel.description).substring(0, 100)}${channel.description.length > 100 ? '...' : ''}</p>
-                </div>
-            `;
-            videoContainer.appendChild(channelCard);
-        });
-    } catch (error) {
-        console.error('Error fetching subscriptions:', error);
-        showError('Failed to load subscriptions. Please try again.');
-    } finally {
-        hideLoading();
-    }
-}
-
 // Event Listeners
 document.getElementById('google-sign-in').addEventListener('click', handleSignIn);
 document.querySelector('.menu-icon').addEventListener('click', () => {
     document.querySelector('.sidebar').classList.toggle('small-sidebar');
     document.querySelector('.container').classList.toggle('large-container');
 });
-
-// Add subscription click handler
-document.querySelector('[data-page="subscriptions"]').addEventListener('click', handleSubscriptionClick);
 
 // Search Functionality
 searchButton.addEventListener('click', () => {

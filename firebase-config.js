@@ -19,7 +19,12 @@ const auth = getAuth(app);
 
 // Configure Auth for localhost
 if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-    connectAuthEmulator(auth, "http://localhost:9099");
+    try {
+        connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
+        console.log('Connected to Auth emulator');
+    } catch (error) {
+        console.error('Failed to connect to Auth emulator:', error);
+    }
     auth.useDeviceLanguage();
 }
 

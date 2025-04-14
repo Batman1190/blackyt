@@ -47,8 +47,13 @@ app.get('*', (req, res) => {
 });
 
 // Start server with error handling
-app.listen(PORT, () => {
-    console.log(`Server is running in ${NODE_ENV} mode on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    const localIp = Object.values(require('os').networkInterfaces())
+        .flat()
+        .find(({family, internal}) => family === 'IPv4' && !internal)?.address || 'localhost';
+    console.log(`Server is running in ${NODE_ENV} mode`);
+    console.log(`Local: http://localhost:${PORT}`);
+    console.log(`Network: http://${localIp}:${PORT}`);
     console.log('Press Ctrl+C to stop the server');
 }).on('error', (err) => {
     if (err.code === 'EADDRINUSE') {

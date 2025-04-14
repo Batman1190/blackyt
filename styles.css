@@ -145,7 +145,7 @@ body {
     top: 60px;
     padding-top: 20px;
     overflow-y: auto;
-    transition: width 0.3s ease;
+    transition: width 0.3s ease, transform 0.3s ease;
 }
 
 .sidebar.collapsed {
@@ -480,72 +480,119 @@ body {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Responsive Design Improvements */
+/* Mobile-first media queries */
 @media (max-width: 768px) {
-    .video-card {
-        width: 100%;
+    .navbar {
+        padding: 8px 12px;
+        height: 56px;
     }
 
-    .nav-middle .search-box {
-        display: none;
+    .nav-left .menu-icon {
+        margin-right: 16px;
     }
 
-    .nav-middle.search-active .search-box {
-        display: flex;
+    .nav-left .logo {
+        height: 20px;
+    }
+
+    .nav-middle {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
-        padding: 10px;
+        height: 56px;
+        padding: 8px;
         background: var(--background-color);
-        z-index: 1000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transform: translateY(-100%);
+        transition: transform 0.3s ease;
+        z-index: 99;
+    }
+
+    .nav-middle.active {
+        transform: translateY(0);
+    }
+
+    .search-box {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 8px;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 8px;
+        font-size: 16px;
+    }
+
+    .video-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px;
+        padding: 12px;
     }
 
     .sidebar {
-        width: 100%;
-        height: auto;
         position: fixed;
         bottom: 0;
-        top: auto;
+        left: 0;
+        width: 100%;
+        height: 56px;
+        padding: 0;
         display: flex;
         justify-content: space-around;
-        padding: 10px 0;
         background: var(--background-color);
         border-top: 1px solid var(--border-color);
+        z-index: 98;
     }
 
-    .sidebar .shortcut-links {
+    .shortcut-links {
         display: flex;
-        justify-content: space-around;
         width: 100%;
+        padding: 0;
     }
 
-    .sidebar .shortcut-links a {
+    .nav-link {
         flex: 1;
-        padding: 5px;
-        text-align: center;
+        flex-direction: column;
+        gap: 4px;
+        padding: 8px 4px;
+        font-size: 12px;
     }
 
-    .sidebar .shortcut-links a p {
-        display: none;
-    }
-
-    .sidebar .shortcut-links a i {
+    .nav-link i {
         font-size: 20px;
+    }
+
+    .nav-link p {
+        margin: 0;
+        font-size: 10px;
     }
 
     .container {
         margin-left: 0;
-        margin-bottom: 60px;
+        margin-bottom: 56px;
+        padding-top: 56px;
     }
 
     .video-player-container {
         padding: 0;
+        height: calc(100vh - 56px);
     }
 
-    #youtube-player {
+    #player {
         width: 100%;
         height: 100%;
+    }
+
+    .auth-button {
+        padding: 6px 12px;
+        font-size: 14px;
+    }
+
+    .auth-button i {
+        font-size: 20px;
     }
 }
 
