@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.google.com; frame-src 'self' https: https://*.firebaseapp.com https://*.google.com https://www.youtube.com">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.google.com https://*.doubleclick.net http://localhost:* ws://localhost:*; frame-src 'self' https: https://*.firebaseapp.com https://*.google.com https://www.youtube.com">
     <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
     <title>Black YT</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -11,18 +11,32 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/x-icon" href="images/favicon.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script type="module" src="sidebar.js" defer></script>
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-left">
             <i class="material-icons menu-icon">menu</i>
-            <img src="logo.png" class="logo" alt="Black YT">
+            <img src="images/logo.svg" class="logo" alt="Black YT">
+            <h1 class="site-title">Black YT</h1>
         </div>
         <div class="nav-middle">
             <div class="search-box">
                 <input type="text" placeholder="Search">
                 <button><i class="material-icons">search</i></button>
+            </div>
+            <div class="region-selector">
+                <select id="region-select">
+                    <option value="US">United States</option>
+                    <option value="GB">United Kingdom</option>
+                    <option value="CA">Canada</option>
+                    <option value="DE">Germany</option>
+                    <option value="FR">France</option>
+                    <option value="JP">Japan</option>
+                    <option value="KR">South Korea</option>
+                    <option value="IN">India</option>
+                </select>
             </div>
         </div>
         <div class="nav-right">
@@ -83,8 +97,8 @@
     <div id="video-player-container" class="video-player-container hidden">
         <div class="player-wrapper">
             <div id="player"></div>
-            <button id="close-player" class="close-btn">
-                <i class="material-icons">close</i>
+            <button id="back-to-home" class="back-btn">
+                <i class="material-icons">arrow_back</i>
             </button>
         </div>
     </div>

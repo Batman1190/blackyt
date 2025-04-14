@@ -46,7 +46,41 @@ body {
 }
 
 .nav-left .logo {
-    height: 20px;
+    height: 25px;
+    margin-right: 10px;
+    transition: transform 0.2s;
+}
+
+.nav-left .logo:hover {
+    transform: scale(1.05);
+}
+
+.nav-left .site-title {
+    color: var(--primary-color);
+    font-size: 20px;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+@media (max-width: 600px) {
+    .nav-left .site-title {
+        display: none;
+    }
+}
+.nav-left .menu-icon {
+    width: 22px;
+    margin-right: 25px;
+    cursor: pointer;
+}
+
+.nav-left .logo {
+    height: 25px;
+    margin-right: 10px;
+    transition: transform 0.2s;
+}
+
+.nav-left .logo:hover {
+    transform: scale(1.05);
 }
 
 .nav-middle .search-box {
@@ -111,6 +145,15 @@ body {
     top: 60px;
     padding-top: 20px;
     overflow-y: auto;
+    transition: width 0.3s ease;
+}
+
+.sidebar.collapsed {
+    width: 70px;
+}
+
+.content {
+    transition: margin-left 0.3s ease;
 }
 
 .shortcut-links {
@@ -120,10 +163,20 @@ body {
 .nav-link {
     display: flex;
     align-items: center;
+    gap: 24px;
     padding: 10px 20px;
     text-decoration: none;
     color: var(--primary-color);
     transition: background-color 0.2s;
+}
+
+.nav-link i {
+    font-size: 24px;
+}
+
+.nav-link p {
+    font-size: 14px;
+    margin: 0;
 }
 
 .nav-link:hover {
@@ -178,6 +231,34 @@ body {
     aspect-ratio: 16/9;
     border-radius: 12px;
     overflow: hidden;
+    position: relative;
+}
+
+.thumbnail .play-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s, box-shadow 0.3s;
+}
+
+.thumbnail .play-button i {
+    color: #ff6b00;
+    font-size: 36px;
+    filter: drop-shadow(0 0 8px #ff6b00);
+}
+
+.video-card:hover .play-button {
+    opacity: 1;
+    box-shadow: 0 0 20px rgba(255, 107, 0, 0.5);
 }
 
 .thumbnail img {
@@ -377,22 +458,22 @@ body {
     border: none;
 }
 
-.close-video-btn {
+.back-btn {
     position: absolute;
-    top: -40px;
-    right: -40px;
+    top: 20px;
+    left: 20px;
     background: rgba(0, 0, 0, 0.6);
     border: none;
     color: white;
     font-size: 24px;
     cursor: pointer;
     z-index: 1001;
-    padding: 8px;
+    padding: 12px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s;
+    transition: all 0.2s ease;
 }
 
 .close-video-btn:hover {

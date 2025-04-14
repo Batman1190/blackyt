@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, connectAuthEmulator } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
     apiKey: "AIzaSyC4e7yS7tHZMD-em10ZLV-dDOKhrs92wE4",
     authDomain: "ramdor-7c0d5.firebaseapp.com",
@@ -19,8 +19,8 @@ const auth = getAuth(app);
 
 // Configure Auth for localhost
 if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+    connectAuthEmulator(auth, "http://localhost:9099");
     auth.useDeviceLanguage();
-    auth._config.authDomain = window.location.host;
 }
 
 // Configure Google Auth Provider

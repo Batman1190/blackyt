@@ -66,16 +66,46 @@ function formatDate(dateString) {
 }
 
 // YouTube API Functions
+async function fetchTrendingVideos(regionCode = 'US') {
+    try {
+        const apiKey = YOUTUBE_CONFIG.getAPIKey();
+        if (!apiKey) {
+            throw new Error('No YouTube API keys available');
+        }
+        showLoading();
+        const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&maxResults=24&regionCode=${regionCode}&key=${apiKey}`);
+        if (!response.ok) throw new Error('Failed to fetch trending videos');
+        const data = await response.json();
+        displayVideos(data.items);
+    } catch (error) {
+        console.error('Error fetching trending videos:', error);
+        showError('Failed to load trending videos. Please try again.');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function fetchRecommendedVideos() {
+    return fetchTrendingVideos('US');
+}
+
 async function searchVideos(query) {
     try {
+        const apiKey = YOUTUBE_CONFIG.getAPIKey();
+        if (!apiKey) {
+            throw new Error('No YouTube API keys available');
+        }
         showLoading();
-        const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=24&q=${encodeURIComponent(query)}&type=video&key=${YOUTUBE_CONFIG.API_KEY}`);
+        const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=24&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`);
         if (!response.ok) throw new Error('Search failed');
         const data = await response.json();
         displayVideos(data.items);
     } catch (error) {
         console.error('Search error:', error);
-        showError('Failed to search videos. Please try again.');
+        const errorMessage = error.message === 'No YouTube API keys available' 
+            ? 'No YouTube API keys are available. Please check your configuration.'
+            : 'Failed to search videos. Please try again.';
+        showError(errorMessage);
     } finally {
         hideLoading();
     }
@@ -83,7 +113,9 @@ async function searchVideos(query) {
 
 async function fetchVideoStatistics(videoId, videoCard) {
     try {
-        const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoId}&key=${YOUTUBE_CONFIG.API_KEY}`);
+        const apiKey = YOUTUBE_CONFIG.getAPIKey();
+        if (!apiKey) return;
+        const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoId}&key=${apiKey}`);
         if (!response.ok) throw new Error('Failed to fetch video statistics');
         const data = await response.json();
         if (data.items && data.items[0]) {
@@ -99,7 +131,9 @@ async function fetchVideoStatistics(videoId, videoCard) {
 
 async function fetchChannelIcon(channelId, videoCard) {
     try {
-        const response = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${channelId}&key=${YOUTUBE_CONFIG.API_KEY}`);
+        const apiKey = YOUTUBE_CONFIG.getAPIKey();
+        if (!apiKey) return;
+        const response = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${channelId}&key=${apiKey}`);
         if (!response.ok) throw new Error('Failed to fetch channel data');
         const data = await response.json();
         if (data.items && data.items[0]) {
@@ -141,6 +175,9 @@ function displayVideos(videos) {
                          alt="${escapeHtml(videoData.title)}"
                          onerror="this.src='images/placeholder.jpg'">
                     <div class="duration"></div>
+                    <div class="play-button">
+                        <i class="material-icons">play_circle_filled</i>
+                    </div>
                 </div>
                 <div class="video-info">
                     <div class="channel-icon">
@@ -270,6 +307,16 @@ function closeVideoPlayer() {
         document.body.style.overflow = 'auto';
     }
 }
+
+document.getElementById('back-to-home').addEventListener('click', function() {
+    closeVideoPlayer();
+});
+
+// Add home button click handler
+document.querySelector('[data-page="home"]').addEventListener('click', function(e) {
+    e.preventDefault();
+    fetchRecommendedVideos();
+});
 
 function showVideoPlayer() {
     if (videoPlayerContainer) {
@@ -411,12 +458,68 @@ function handleSignOut() {
 // Initialize Auth State
 onAuthStateChanged(auth, updateAuthState);
 
+// Subscription Handler
+async function handleSubscriptionClick() {
+    if (!auth.currentUser) {
+        document.getElementById('auth-modal').classList.remove('hidden');
+        return;
+    }
+
+    try {
+        showLoading();
+        const apiKey = YOUTUBE_CONFIG.getAPIKey();
+        if (!apiKey) {
+            throw new Error('No YouTube API keys available');
+        }
+
+        const response = await fetch(
+            `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=50&key=${apiKey}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${auth.currentUser.accessToken}`
+                }
+            }
+        );
+
+        if (!response.ok) throw new Error('Failed to fetch subscriptions');
+        const data = await response.json();
+
+        // Clear existing videos
+        videoContainer.innerHTML = '<h2 class="section-title">Your Subscriptions</h2>';
+
+        // Display subscribed channels
+        data.items.forEach(subscription => {
+            const channel = subscription.snippet;
+            const channelCard = document.createElement('div');
+            channelCard.className = 'channel-card';
+            channelCard.innerHTML = `
+                <div class="channel-thumbnail">
+                    <img src="${channel.thumbnails.medium.url}" alt="${escapeHtml(channel.title)}">
+                </div>
+                <div class="channel-info">
+                    <h3>${escapeHtml(channel.title)}</h3>
+                    <p>${escapeHtml(channel.description).substring(0, 100)}${channel.description.length > 100 ? '...' : ''}</p>
+                </div>
+            `;
+            videoContainer.appendChild(channelCard);
+        });
+    } catch (error) {
+        console.error('Error fetching subscriptions:', error);
+        showError('Failed to load subscriptions. Please try again.');
+    } finally {
+        hideLoading();
+    }
+}
+
 // Event Listeners
 document.getElementById('google-sign-in').addEventListener('click', handleSignIn);
 document.querySelector('.menu-icon').addEventListener('click', () => {
     document.querySelector('.sidebar').classList.toggle('small-sidebar');
     document.querySelector('.container').classList.toggle('large-container');
 });
+
+// Add subscription click handler
+document.querySelector('[data-page="subscriptions"]').addEventListener('click', handleSubscriptionClick);
 
 // Search Functionality
 searchButton.addEventListener('click', () => {
@@ -437,5 +540,11 @@ searchInput.addEventListener('keypress', (e) => {
     }
 });
 
+// Region selector event listener
+document.getElementById('region-select').addEventListener('change', (e) => {
+    const selectedRegion = e.target.value;
+    fetchTrendingVideos(selectedRegion);
+});
+
 // Initial Load
-searchVideos('programming tutorials');
+fetchTrendingVideos('US');

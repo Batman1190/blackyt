@@ -1,17 +1,60 @@
 const express = require('express');
 const path = require('path');
+const helmet = require('helmet');
 const app = express();
 
-// Serve static files
-app.use(express.static(__dirname));
+// Security middleware with CORS configuration
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
+}));
+
+// CORS and security headers
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    next();
+});
+
+// Environment variables
+const PORT = process.env.PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// Serve static files with proper MIME types and caching
+app.use(express.static(__dirname, {
+    maxAge: NODE_ENV === 'production' ? '1d' : 0,
+    etag: true,
+    setHeaders: (res, path) => {
+        if (path.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript');
+        }
+    }
+}));
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Something broke!');
+});
 
 // Serve index.html for all routes
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-const PORT = 3000;
+// Start server with error handling
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running in ${NODE_ENV} mode on http://localhost:${PORT}`);
     console.log('Press Ctrl+C to stop the server');
+}).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use`);
+    } else {
+        console.error('Server error:', err);
+    }
+    process.exit(1);
 });
