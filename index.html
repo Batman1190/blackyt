@@ -17,27 +17,26 @@
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-left">
-            <i class="material-icons menu-icon">menu</i>
-            <img src="images/logo.svg" class="logo" alt="Black YT">
+            <div class="menu-icon">
+                <i class="fas fa-bars"></i>
+            </div>
+            <a href="#" class="logo-link">
+                <img src="images/logo.png" alt="Black YT Logo" class="logo">
+            </a>
             <h1 class="site-title">Black YT</h1>
         </div>
         <div class="nav-middle">
             <div class="search-box">
                 <input type="text" placeholder="Search">
-                <button><i class="material-icons">search</i></button>
+                <button><i class="fas fa-search"></i></button>
             </div>
-            <div class="region-selector">
-                <select id="region-select">
-                    <option value="US">United States</option>
-                    <option value="GB">United Kingdom</option>
-                    <option value="CA">Canada</option>
-                    <option value="DE">Germany</option>
-                    <option value="FR">France</option>
-                    <option value="JP">Japan</option>
-                    <option value="KR">South Korea</option>
-                    <option value="IN">India</option>
-                </select>
-            </div>
+            <select id="region-select">
+                <option value="US">United States</option>
+                <option value="GB">United Kingdom</option>
+                <option value="CA">Canada</option>
+                <option value="AU">Australia</option>
+                <option value="PH">Philippines</option>
+            </select>
         </div>
         <div class="nav-right">
             <button id="auth-button" class="auth-button">

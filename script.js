@@ -630,6 +630,111 @@ document.addEventListener('DOMContentLoaded', function() {
             fetchTrendingVideos(selectedRegion);
         });
     }
+
+    // Handle logo click to load home page
+    const logoLink = document.querySelector('.logo-link');
+    if (logoLink) {
+        logoLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Close video player if open
+            if (videoPlayerContainer) {
+                videoPlayerContainer.classList.add('hidden');
+            }
+            // Reset to home page content
+            loadHomePage();
+        });
+    }
+
+    // Handle sign-in button click
+    const signInButton = document.getElementById('auth-button');
+    if (signInButton) {
+        signInButton.addEventListener('click', function() {
+            const authModal = document.getElementById('auth-modal');
+            if (authModal) {
+                authModal.classList.remove('hidden');
+            }
+        });
+    }
+
+    // Handle Google sign-in
+    const googleSignInBtn = document.getElementById('google-sign-in');
+    if (googleSignInBtn) {
+        googleSignInBtn.addEventListener('click', function() {
+            signInWithPopup(auth, provider)
+                .then((result) => {
+                    console.log('Sign-in successful:', result.user);
+                    const authModal = document.getElementById('auth-modal');
+                    if (authModal) {
+                        authModal.classList.add('hidden');
+                    }
+                    updateAuthUI(result.user);
+                })
+                .catch((error) => {
+                    console.error('Sign-in error:', error);
+                    showError('Failed to sign in. Please try again.');
+                });
+        });
+    }
+
+    // Handle sign-out
+    const signOutButton = document.getElementById('sign-out');
+    if (signOutButton) {
+        signOutButton.addEventListener('click', function() {
+            signOut(auth)
+                .then(() => {
+                    console.log('Sign-out successful');
+                    updateAuthUI(null);
+                })
+                .catch((error) => {
+                    console.error('Sign-out error:', error);
+                    showError('Failed to sign out. Please try again.');
+                });
+        });
+    }
+
+    // Update auth UI based on user state
+    function updateAuthUI(user) {
+        const signInButton = document.getElementById('auth-button');
+        const signOutButton = document.getElementById('sign-out');
+        const userProfile = document.getElementById('user-profile');
+        
+        if (user) {
+            // User is signed in
+            if (signInButton) signInButton.classList.add('hidden');
+            if (signOutButton) signOutButton.classList.remove('hidden');
+            if (userProfile) {
+                userProfile.classList.remove('hidden');
+                const profileImage = userProfile.querySelector('img');
+                if (profileImage) {
+                    profileImage.src = user.photoURL || 'images/default-avatar.png';
+                }
+            }
+        } else {
+            // User is signed out
+            if (signInButton) signInButton.classList.remove('hidden');
+            if (signOutButton) signOutButton.classList.add('hidden');
+            if (userProfile) userProfile.classList.add('hidden');
+        }
+    }
+
+    // Listen for auth state changes
+    onAuthStateChanged(auth, (user) => {
+        updateAuthUI(user);
+    });
+
+    // Handle trending button click
+    const trendingButton = document.querySelector('[data-page="trending"]');
+    if (trendingButton) {
+        trendingButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Close video player if open
+            if (videoPlayerContainer) {
+                videoPlayerContainer.classList.add('hidden');
+            }
+            // Load trending videos
+            fetchTrendingVideos('US');
+        });
+    }
 });
 
 // Make functions globally available
@@ -653,4 +758,20 @@ function hidePlayerControls() {
         controls.style.opacity = '0';
         controls.style.pointerEvents = 'none';
     }
+}
+
+function loadHomePage() {
+    // Clear any existing content
+    const videoContainer = document.getElementById('video-container');
+    if (!videoContainer) return;
+    
+    // Add loading indicator
+    videoContainer.innerHTML = `
+        <div class="loading">
+            <div class="spinner"></div>
+        </div>
+    `;
+    
+    // Load trending videos
+    fetchTrendingVideos('US');
 }
