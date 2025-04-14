@@ -174,6 +174,7 @@ body {
     min-height: calc(100vh - 60px);
     background-color: var(--background-color);
     width: calc(100% - 250px);
+    padding-right: 235px;
 }
 
 .shortcut-links {
@@ -1230,4 +1231,45 @@ body {
 
 .video-card:hover .play-button i {
     transform: scale(1.1);
+}
+
+/* Chatango Widget Styles */
+#cid0020000405651970254 {
+    position: fixed !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 225px !important;
+    height: 642px !important;
+    border: none !important;
+    background: transparent !important;
+}
+
+/* Ensure the widget doesn't overlap with the sidebar */
+@media (max-width: 1200px) {
+    #cid0020000405651970254 {
+        width: 200px !important;
+        height: 500px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #cid0020000405651970254 {
+        display: none !important;
+    }
+}
+
+/* Add space for the chat widget */
+@media (max-width: 1200px) {
+    .content {
+        padding-right: 210px;
+    }
+}
+
+@media (max-width: 768px) {
+    .content {
+        padding-right: 20px;
+    }
 }

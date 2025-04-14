@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob:; connect-src 'self' https://*.googleapis.com https://*.google.com https://*.doubleclick.net http://localhost:* ws://localhost:*; frame-src 'self' https: https://www.youtube.com; frame-ancestors 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob:; connect-src 'self' https://*.googleapis.com https://*.google.com https://*.doubleclick.net https://*.chatango.com http://localhost:* ws://localhost:*; frame-src 'self' https: https://www.youtube.com https://*.chatango.com; frame-ancestors 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.chatango.com https://www.youtube.com https://www.googleapis.com;">
     <meta http-equiv="Cross-Origin-Opener-Policy" content="unsafe-none">
     <title>Black YT</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -137,5 +137,33 @@
     <script src="https://www.youtube.com/iframe_api"></script>
     <script type="module" src="config.js"></script>
     <script type="module" src="script.js"></script>
+    
+    <!-- Chatango Chat Widget -->
+    <script>
+        window.ChatangoConfig = {
+            handle: "blackyt",
+            arch: "js",
+            styles: {
+                a: "000000",
+                b: 100,
+                c: "FFFFFF",
+                d: "FFFFFF",
+                k: "000000",
+                l: "000000",
+                m: "000000",
+                n: "FFFFFF",
+                p: "10",
+                q: "000000",
+                r: 100,
+                fwtickm: 1,
+                pos: "br",
+                cv: 1,
+                cvbg: "000000",
+                cvw: 225,
+                cvh: 30
+            }
+        };
+    </script>
+    <script id="cid0020000405651970254" data-cfasync="false" async src="//st.chatango.com/js/gz/emb.js"></script>
 </body>
 </html>
