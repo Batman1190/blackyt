@@ -14,7 +14,12 @@ const YOUTUBE_API_KEYS = [
     'AIzaSyDzoPLaJUFjAB0kSSPRGQfUwiMlywWIO4I',
     'AIzaSyCSMlS_3EpigNZYoyxU7L6mnLPfpFbJ6vA',
     'AIzaSyAvw2xoR4eaQOzsyEBjthCQSFo5x60jNV8',
-    'AIzaSyDOd-fwjmHblCWYZWFtu6V0QNGHNBMb0Tw'
+    'AIzaSyDOd-fwjmHblCWYZWFtu6V0QNGHNBMb0Tw',
+    'AIzaSyDKye_UeYzygyeo7H35-bKrM3wgCXb3wPs',
+    'AIzaSyBg_4VpFdldAYh4eyEOdJKibMS1HeM7wZQ',
+    'AIzaSyDIhTB0yw5Qkbdp3Wpu1n0djdJQXvELGlc',
+    'AIzaSyCCgPxoUbeo3yiKo-2i8FTDyMO2MEhVS5Q',
+    'AIzaSyDc-OSidO2qU5QAiXi7Ad1qASH3rPGZB3w'
 ];
 
 let currentKeyIndex = 0;
