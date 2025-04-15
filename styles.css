@@ -183,15 +183,26 @@ body {
 .nav-link {
     display: flex;
     align-items: center;
-    gap: 24px;
-    padding: 10px 20px;
     text-decoration: none;
-    color: var(--primary-color);
-    transition: background-color 0.2s;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    margin: 5px 0;
+}
+
+.nav-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link.active {
+    background: rgba(255, 255, 255, 0.2);
+    font-weight: 500;
 }
 
 .nav-link i {
-    font-size: 24px;
+    margin-right: 15px;
+    font-size: 20px;
 }
 
 .nav-link p {
@@ -199,21 +210,9 @@ body {
     margin: 0;
 }
 
-.nav-link:hover {
-    background: var(--hover-color);
-}
-
-.nav-link.active {
-    background: var(--hover-color);
-}
-
 .nav-link.disabled {
     opacity: 0.5;
     cursor: not-allowed;
-}
-
-.nav-link i {
-    margin-right: 20px;
 }
 
 .nav-link.protected.disabled {
@@ -251,6 +250,23 @@ body {
     padding-top: 56.25%; /* 16:9 Aspect Ratio */
     overflow: hidden;
     border-radius: 10px;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.thumbnail::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0);
+    transition: background 0.3s ease;
+    z-index: 1;
+}
+
+.thumbnail:hover::before {
+    background: rgba(0, 0, 0, 0.3);
 }
 
 .thumbnail img {
@@ -266,7 +282,7 @@ body {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) scale(0.9);
     width: 60px;
     height: 60px;
     background: rgba(0, 0, 0, 0.7);
@@ -275,20 +291,26 @@ body {
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 2;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
 }
 
 .thumbnail:hover .play-button {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1.1);
+    transform: translate(-50%, -50%) scale(1);
 }
 
 .play-button i {
     color: #ff6b00;
     font-size: 36px;
     filter: drop-shadow(0 0 8px rgba(255, 107, 0, 0.6));
-    transition: transform 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.video-card:hover .play-button i {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 12px rgba(255, 107, 0, 0.8));
 }
 
 .video-info {
@@ -304,38 +326,44 @@ body {
     width: 36px;
     height: 36px;
     min-width: 36px;
-    min-height: 36px;
+    margin-right: 12px;
     border-radius: 50%;
-    background-color: var(--hover-color);
-    flex-shrink: 0;
-    position: relative;
     overflow: hidden;
-    isolation: isolate;
-}
-
-.channel-icon::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-color: var(--hover-color);
-    z-index: 1;
-    opacity: 0.5;
-    pointer-events: none;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .channel-icon img {
-    position: absolute;
-    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    z-index: 2;
-    opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.3s ease;
+}
+
+.channel-icon img.loading {
+    opacity: 0.5;
 }
 
 .channel-icon img.loaded {
     opacity: 1;
+}
+
+/* Add hover effect for channel icons */
+.channel-icon:hover img {
+    transform: scale(1.1);
+    transition: transform 0.3s ease;
+}
+
+/* Ensure proper sizing in video cards */
+.video-card .channel-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Add subtle shadow to make icons pop */
+.video-card .channel-icon img {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .details {
@@ -692,6 +720,15 @@ body {
         height: 32px;
         min-width: 32px;
         min-height: 32px;
+    }
+
+    .play-button {
+        width: 50px;
+        height: 50px;
+    }
+
+    .play-button i {
+        font-size: 30px;
     }
 }
 

@@ -131,16 +131,18 @@ async function fetchTrendingVideos(region = 'US') {
 
         let attempts = 0;
         const maxAttempts = YOUTUBE_CONFIG.getKeyCount();
+        let lastError = null;
 
         while (attempts < maxAttempts) {
             try {
-                const apiKey = YOUTUBE_CONFIG.getAPIKey();
-                console.log('Trying with API key index:', attempts);
+                const apiKey = await YOUTUBE_CONFIG.getAPIKey();
+                console.log(`Attempt ${attempts + 1}/${maxAttempts} with API key index: ${YOUTUBE_CONFIG.getCurrentKeyIndex()}`);
 
                 const response = await fetch(`https://youtube.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails%2Cstatistics&chart=mostPopular&regionCode=${region}&maxResults=24&key=${apiKey}`);
                 
                 if (response.status === 403) {
                     console.log('API key quota exceeded, trying next key...');
+                    lastError = 'API key quota exceeded';
                     attempts++;
                     continue;
                 }
@@ -150,31 +152,19 @@ async function fetchTrendingVideos(region = 'US') {
                 }
 
                 const data = await response.json();
-                
-                // Clear loading state
-                videoContainer.innerHTML = '';
-                
-                // Create video grid
-                const videoGrid = document.createElement('div');
-                videoGrid.className = 'video-grid';
-                
-                // Add videos to grid
-                data.items.forEach(video => {
-                    const videoCard = createVideoCard(video);
-                    videoGrid.appendChild(videoCard);
-                });
-                
-                videoContainer.appendChild(videoGrid);
-                return; // Success, exit the function
+                if (data.items && data.items.length > 0) {
+                    displayVideos(data.items);
+                    return; // Success, exit the function
+                }
             } catch (error) {
                 console.error('Error with current API key:', error);
+                lastError = error.message;
                 attempts++;
             }
         }
 
-        // If we get here, all API keys failed
-        throw new Error('All API keys exhausted');
-
+        // If we get here, all attempts failed
+        throw new Error(`Failed to fetch videos after ${maxAttempts} attempts. Last error: ${lastError}`);
     } catch (error) {
         console.error('Error fetching trending videos:', error);
         const videoContainer = document.getElementById('video-container');
@@ -268,16 +258,18 @@ async function searchVideos(query) {
 
         let attempts = 0;
         const maxAttempts = YOUTUBE_CONFIG.getKeyCount();
+        let lastError = null;
 
         while (attempts < maxAttempts) {
             try {
-                const apiKey = YOUTUBE_CONFIG.getAPIKey();
-                console.log('Searching with API key index:', attempts);
+                const apiKey = await YOUTUBE_CONFIG.getAPIKey();
+                console.log(`Search attempt ${attempts + 1}/${maxAttempts} with API key index: ${YOUTUBE_CONFIG.getCurrentKeyIndex()}`);
 
                 const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=24&q=${encodeURIComponent(query)}&type=video&key=${apiKey}`);
                 
                 if (response.status === 403) {
                     console.log('API key quota exceeded, trying next key...');
+                    lastError = 'API key quota exceeded';
                     attempts++;
                     continue;
                 }
@@ -315,12 +307,13 @@ async function searchVideos(query) {
                 return; // Success, exit the function
             } catch (error) {
                 console.error('Error with current API key:', error);
+                lastError = error.message;
                 attempts++;
             }
         }
 
-        // If we get here, all API keys failed
-        throw new Error('All API keys exhausted');
+        // If we get here, all attempts failed
+        throw new Error(`Failed to search videos after ${maxAttempts} attempts. Last error: ${lastError}`);
 
     } catch (error) {
         console.error('Search error:', error);
@@ -419,10 +412,13 @@ window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
 
 async function fetchVideoStatistics(videoId, videoCard) {
     try {
-        const apiKey = YOUTUBE_CONFIG.getAPIKey();
-        if (!apiKey) return;
+        const apiKey = await YOUTUBE_CONFIG.getAPIKey();
         const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoId}&key=${apiKey}`);
-        if (!response.ok) throw new Error('Failed to fetch video statistics');
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch video statistics');
+        }
+        
         const data = await response.json();
         if (data.items && data.items[0]) {
             const stats = data.items[0].statistics;
@@ -436,72 +432,101 @@ async function fetchVideoStatistics(videoId, videoCard) {
 }
 
 async function fetchChannelIcon(channelId, videoCard) {
+    if (!channelId || !videoCard) {
+        console.error('Missing channelId or videoCard element');
+        return;
+    }
+
+    const channelIcon = videoCard.querySelector('.channel-icon img');
+    if (!channelIcon) {
+        console.error('Channel icon element not found');
+        return;
+    }
+
+    // Set initial loading state
+    channelIcon.classList.add('loading');
+    channelIcon.src = 'images/default-channel.svg';
+
     try {
-        const apiKey = YOUTUBE_CONFIG.getAPIKey();
-        if (!apiKey) return;
-
-        const img = videoCard.querySelector('.channel-icon img');
-        if (!img) return;
-
-        // Set a loading state
-        img.style.opacity = '0';
-        
+        const apiKey = await YOUTUBE_CONFIG.getAPIKey();
         const response = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${channelId}&key=${apiKey}`);
-        if (!response.ok) throw new Error('Failed to fetch channel data');
         
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
-        if (data.items && data.items[0] && data.items[0].snippet.thumbnails) {
+        if (data.items?.[0]?.snippet?.thumbnails?.default?.url) {
             const iconUrl = data.items[0].snippet.thumbnails.default.url;
             
             // Create a new image to preload
             const tempImg = new Image();
             tempImg.onload = () => {
-                img.src = iconUrl;
-                img.classList.add('loaded');
-                img.style.opacity = '1';
+                channelIcon.src = iconUrl;
+                channelIcon.classList.remove('loading');
+                channelIcon.classList.add('loaded');
             };
             tempImg.onerror = () => {
                 console.error('Failed to load channel icon:', iconUrl);
-                img.style.opacity = '1';
+                channelIcon.src = 'images/default-channel.svg';
+                channelIcon.classList.remove('loading');
             };
             tempImg.src = iconUrl;
+        } else {
+            throw new Error('No channel data found');
         }
     } catch (error) {
-        console.error('Error fetching channel icon:', error);
-        const img = videoCard.querySelector('.channel-icon img');
-        if (img) {
-            img.style.opacity = '1';
-        }
+        console.error(`Error fetching channel icon for ${channelId}:`, error);
+        channelIcon.src = 'images/default-channel.svg';
+        channelIcon.classList.remove('loading');
     }
 }
 
 // Display Videos
 function displayVideos(videos) {
-    console.log('Displaying videos:', videos);
+    console.log(`Displaying ${videos?.length || 0} videos`);
+    
+    const videoContainer = document.getElementById('video-container');
+    if (!videoContainer) {
+        console.error('Video container not found');
+        return;
+    }
+
     if (!videos || videos.length === 0) {
         videoContainer.innerHTML = '<div class="no-results">No videos available</div>';
         return;
     }
 
+    // Clear existing content
     videoContainer.innerHTML = '';
-    videos.forEach(video => {
+    
+    // Create video grid
+    const videoGrid = document.createElement('div');
+    videoGrid.className = 'video-grid';
+    videoContainer.appendChild(videoGrid);
+
+    videos.forEach((video, index) => {
         try {
             const videoData = video.snippet;
             const videoId = video.id?.videoId || video.id;
             
             if (!videoData || !videoId) {
-                console.error('Invalid video data:', video);
+                console.error(`Invalid video data at index ${index}:`, video);
                 return;
             }
             
             const videoCard = document.createElement('div');
             videoCard.className = 'video-card';
             videoCard.dataset.videoId = videoId;
+            
+            // Ensure thumbnail URL exists
+            const thumbnailUrl = videoData.thumbnails?.medium?.url || videoData.thumbnails?.default?.url || 'images/placeholder.jpg';
+            
             videoCard.innerHTML = `
                 <div class="thumbnail">
-                    <img src="${videoData.thumbnails?.medium?.url || 'images/placeholder.jpg'}" 
+                    <img src="${thumbnailUrl}" 
                          alt="${escapeHtml(videoData.title)}"
-                         onerror="this.src='images/placeholder.jpg'">
+                         onerror="this.onerror=null; this.src='images/placeholder.jpg';">
                     <div class="duration"></div>
                     <div class="play-button">
                         <i class="material-icons">play_circle_filled</i>
@@ -509,10 +534,10 @@ function displayVideos(videos) {
                 </div>
                 <div class="video-info">
                     <div class="channel-icon">
-                        <img src="images/default-channel.svg" alt="Channel" class="loading">
+                        <img src="images/default-channel.svg" alt="${escapeHtml(videoData.channelTitle)}" class="loading">
                     </div>
                     <div class="details">
-                        <h3>${escapeHtml(videoData.title)}</h3>
+                        <h3 title="${escapeHtml(videoData.title)}">${escapeHtml(videoData.title)}</h3>
                         <p class="channel-name">${escapeHtml(videoData.channelTitle)}</p>
                         <p class="views-time">
                             <span class="views">Loading...</span> • 
@@ -525,19 +550,21 @@ function displayVideos(videos) {
             // Add click handler
             videoCard.addEventListener('click', function() {
                 const id = this.dataset.videoId;
-                console.log('Video card clicked:', id);
+                console.log('Video clicked:', id);
                 if (id) {
                     playVideo(id);
                 }
             });
             
-            videoContainer.appendChild(videoCard);
+            videoGrid.appendChild(videoCard);
             
-            // Fetch video statistics
+            // Fetch additional data
             fetchVideoStatistics(videoId, videoCard);
             fetchChannelIcon(videoData.channelId, videoCard);
+            
+            console.log(`Video card created for: ${videoData.title}`);
         } catch (error) {
-            console.error('Error creating video card:', error);
+            console.error(`Error creating video card at index ${index}:`, error);
         }
     });
 }
@@ -667,14 +694,14 @@ function initYouTubePlayer() {
             height: '100%',
             playerVars: {
                 'playsinline': 1,
-                'autoplay': 1,
+                'autoplay': 0,
                 'enablejsapi': 1,
                 'origin': window.location.origin,
                 'widget_referrer': window.location.origin,
                 'rel': 0,
                 'modestbranding': 1,
                 'showinfo': 0,
-                'controls': 1
+                'controls': 0
             },
             events: {
                 'onReady': onPlayerReady,
@@ -682,6 +709,42 @@ function initYouTubePlayer() {
                 'onError': onPlayerError
             }
         });
+
+        // Initialize player controls
+        const playerControls = document.querySelector('.player-controls');
+        if (!playerControls) {
+            console.log('Creating player controls...');
+            const controls = document.createElement('div');
+            controls.className = 'player-controls hidden';
+            controls.innerHTML = `
+                <div class="progress-bar">
+                    <div class="progress-bar-fill"></div>
+                </div>
+                <div class="controls-row">
+                    <button class="control-btn backward" title="Backward 10 seconds">
+                        <i class="fas fa-backward"></i>
+                    </button>
+                    <button class="control-btn play-pause" title="Play/Pause">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button class="control-btn forward" title="Forward 10 seconds">
+                        <i class="fas fa-forward"></i>
+                    </button>
+                    <button class="control-btn volume-toggle" title="Toggle Volume">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                    <div class="time-display">
+                        <span class="current-time">0:00</span>
+                        <span>/</span>
+                        <span class="total-time">0:00</span>
+                    </div>
+                    <button class="control-btn fullscreen" title="Toggle Fullscreen">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            `;
+            playerDiv.parentElement.appendChild(controls);
+        }
     } catch (error) {
         console.error('Error initializing player:', error);
         setTimeout(initYouTubePlayer, 1000);
@@ -691,6 +754,20 @@ function initYouTubePlayer() {
 function onYouTubeIframeAPIReady() {
     console.log('YouTube IFrame API Ready');
     initYouTubePlayer();
+}
+
+function showPlayerControls() {
+    const controls = document.querySelector('.player-controls');
+    if (controls) {
+        controls.classList.remove('hidden');
+    }
+}
+
+function hidePlayerControls() {
+    const controls = document.querySelector('.player-controls');
+    if (controls) {
+        controls.classList.add('hidden');
+    }
 }
 
 function onPlayerReady(event) {
@@ -841,5 +918,31 @@ function displayHistory() {
     });
 }
 
-// Initial Load
+// Add navigation event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    // Handle home and trending navigation
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const page = link.getAttribute('data-page');
+            
+            if (page === 'home' || page === 'trending') {
+                // Get current region
+                const regionSelect = document.getElementById('region-select');
+                const selectedRegion = regionSelect ? regionSelect.value : 'US';
+                
+                // Fetch trending videos for the current region
+                fetchTrendingVideos(selectedRegion);
+                
+                // Update active state
+                document.querySelectorAll('.nav-link').forEach(navLink => {
+                    navLink.classList.remove('active');
+                });
+                link.classList.add('active');
+            }
+        });
+    });
+});
+
+// Load trending videos on page load
 fetchTrendingVideos('US');
