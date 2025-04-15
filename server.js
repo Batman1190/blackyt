@@ -12,9 +12,15 @@ app.use(helmet({
 
 // CORS and security headers
 app.use((req, res, next) => {
+    // Force HTTPS
+    if (req.headers['x-forwarded-proto'] !== 'https' && process.env.NODE_ENV === 'production') {
+        return res.redirect(['https://', req.get('Host'), req.url].join(''));
+    }
+    
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('X-XSS-Protection', '1; mode=block');
@@ -22,7 +28,7 @@ app.use((req, res, next) => {
 });
 
 // Environment variables
-const PORT = process.env.PORT || 80;
+const PORT = process.env.PORT || 443; // Changed to HTTPS port
 const NODE_ENV = process.env.NODE_ENV || 'production';
 
 // Create logs directory if it doesn't exist
@@ -40,19 +46,21 @@ function formatLogEntry(req) {
                'unknown';
     const userAgent = req.headers['user-agent'] || 'unknown';
     const host = req.headers.host || 'unknown';
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const path = req.path;
     const referer = req.headers.referer || 'direct';
     
     // Log to console
     console.log('\n=== New Visit Detected ===');
     console.log(`Time: ${new Date(timestamp).toLocaleString()}`);
+    console.log(`Protocol: ${protocol}`);
     console.log(`Domain: ${host}`);
     console.log(`IP: ${ip}`);
     console.log(`Path: ${path}`);
     console.log(`Referer: ${referer}`);
     console.log('========================\n');
     
-    return `[${timestamp}] Domain: ${host} | IP: ${ip} | Path: ${path} | Referer: ${referer} | Agent: ${userAgent}\n`;
+    return `[${timestamp}] Protocol: ${protocol} | Domain: ${host} | IP: ${ip} | Path: ${path} | Referer: ${referer} | Agent: ${userAgent}\n`;
 }
 
 // Middleware to log visitors
@@ -70,6 +78,7 @@ app.use((req, res, next) => {
                 const files = fs.readdirSync(logsDir).filter(f => f.startsWith('visitors_'));
                 let totalVisits = 0;
                 let domainVisits = {};
+                let protocolVisits = { http: 0, https: 0 };
                 
                 files.forEach(file => {
                     const content = fs.readFileSync(path.join(logsDir, file), 'utf8');
@@ -77,10 +86,18 @@ app.use((req, res, next) => {
                     totalVisits += lines.length;
                     
                     lines.forEach(line => {
+                        // Count domain visits
                         const domainMatch = line.match(/Domain: ([^\s|]+)/);
                         if (domainMatch) {
                             const domain = domainMatch[1];
                             domainVisits[domain] = (domainVisits[domain] || 0) + 1;
+                        }
+                        
+                        // Count protocol visits
+                        const protocolMatch = line.match(/Protocol: (\w+)/);
+                        if (protocolMatch) {
+                            const protocol = protocolMatch[1].toLowerCase();
+                            protocolVisits[protocol] = (protocolVisits[protocol] || 0) + 1;
                         }
                     });
                 });
@@ -88,6 +105,10 @@ app.use((req, res, next) => {
                 // Display current statistics
                 console.log('=== Current Statistics ===');
                 console.log(`Total Visits: ${totalVisits}`);
+                console.log('\nProtocol Distribution:');
+                Object.entries(protocolVisits).forEach(([protocol, count]) => {
+                    console.log(`${protocol.toUpperCase()}: ${count} visits`);
+                });
                 console.log('\nVisits by Domain:');
                 Object.entries(domainVisits)
                     .sort(([,a], [,b]) => b - a)
@@ -113,6 +134,7 @@ app.get('*', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n=== Server Started ===`);
     console.log(`Mode: ${NODE_ENV}`);
+    console.log(`Protocol: HTTPS`);
     console.log(`Port: ${PORT}`);
     console.log(`Logs Directory: ${logsDir}`);
     console.log('===================\n');
