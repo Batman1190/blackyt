@@ -28,8 +28,8 @@ app.use((req, res, next) => {
 });
 
 // Environment variables
-const PORT = process.env.PORT || 443; // Changed to HTTPS port
-const NODE_ENV = process.env.NODE_ENV || 'production';
+const PORT = process.env.PORT || 3000; // Changed to port 3000 for local development
+const NODE_ENV = process.env.NODE_ENV || 'development'; // Changed to development mode
 
 // Create logs directory if it doesn't exist
 const logsDir = path.join(__dirname, 'logs');
@@ -123,7 +123,7 @@ app.use((req, res, next) => {
 });
 
 // Serve static files
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname)));
 
 // Serve index.html for all routes
 app.get('*', (req, res) => {
@@ -134,7 +134,7 @@ app.get('*', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n=== Server Started ===`);
     console.log(`Mode: ${NODE_ENV}`);
-    console.log(`Protocol: HTTPS`);
+    console.log(`Protocol: HTTP`);
     console.log(`Port: ${PORT}`);
     console.log(`Logs Directory: ${logsDir}`);
     console.log('===================\n');
