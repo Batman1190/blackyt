@@ -184,25 +184,32 @@ async function fetchTrendingVideos(region = 'US') {
 function createVideoCard(video) {
     const videoCard = document.createElement('div');
     videoCard.className = 'video-card';
+    videoCard.setAttribute('itemscope', '');
+    videoCard.setAttribute('itemtype', 'http://schema.org/VideoObject');
+    
     videoCard.innerHTML = `
         <div class="thumbnail" onclick="playVideo('${video.id}')">
-            <img src="${video.snippet.thumbnails.medium.url}" alt="${escapeHtml(video.snippet.title)}">
+            <img src="${video.snippet.thumbnails.medium.url}" 
+                 alt="${escapeHtml(video.snippet.title)}"
+                 itemprop="thumbnailUrl">
             <div class="play-button">
                 <i class="fas fa-play"></i>
             </div>
         </div>
         <div class="video-info">
             <div class="channel-icon">
-                <img alt="${escapeHtml(video.snippet.channelTitle)}">
+                <img alt="${escapeHtml(video.snippet.channelTitle)}" itemprop="author">
             </div>
             <div class="details">
-                <h3>${escapeHtml(video.snippet.title)}</h3>
-                <span class="channel-name">${escapeHtml(video.snippet.channelTitle)}</span>
+                <h3 itemprop="name">${escapeHtml(video.snippet.title)}</h3>
+                <meta itemprop="uploadDate" content="${video.snippet.publishedAt}">
+                <span class="channel-name" itemprop="author">${escapeHtml(video.snippet.channelTitle)}</span>
                 <div class="video-meta">
-                    <span class="views">Loading views...</span>
+                    <span class="views" itemprop="interactionCount">Loading views...</span>
                     <span class="separator">•</span>
                     <span class="time">${formatTimeAgo(video.snippet.publishedAt)}</span>
                 </div>
+                <meta itemprop="description" content="${escapeHtml(video.snippet.description || '')}">
             </div>
         </div>
     `;
