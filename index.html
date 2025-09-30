@@ -110,7 +110,11 @@
     <!-- Video Player -->
     <div id="video-player-container" class="video-player-container hidden">
         <div class="player-wrapper">
-            <div id="player"></div>
+            <!-- Video Player -->
+            <video id="video-player" class="video-element" controls autoplay>
+                <source src="path-to-your-video.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
             <div class="player-controls">
                 <div class="control-group">
                     <button class="control-button play-pause">
