@@ -14,7 +14,13 @@ const appState = {
     currentVideo: null,
     searchQuery: '',
     isLoading: false,
-    watchHistory: []
+    watchHistory: [],
+    autoplayEnabled: JSON.parse(localStorage.getItem('autoplayEnabled') || 'true'),
+    userInteracted: false,
+    // Current list of video IDs displayed on the page (for next/previous navigation)
+    currentList: [],
+    // Index of the currently playing video within currentList
+    currentIndex: -1
 };
 
 // Load watch history from storage
@@ -26,6 +32,10 @@ function loadWatchHistory() {
 // Save watch history to storage
 function saveWatchHistory() {
     localStorage.setItem('watchHistory', JSON.stringify(appState.watchHistory));
+}
+
+function saveAutoplaySetting() {
+    localStorage.setItem('autoplayEnabled', JSON.stringify(appState.autoplayEnabled));
 }
 
 // Add video to watch history
@@ -153,6 +163,9 @@ async function fetchTrendingVideos(region = 'US') {
 
                 const data = await response.json();
                 if (data.items && data.items.length > 0) {
+                    // Track list with trending results only when we are actually showing trending
+                    appState.currentList = data.items.map(v => v.id?.videoId || v.id).filter(Boolean);
+                    appState.currentIndex = -1;
                     displayVideos(data.items);
                     return; // Success, exit the function
                 }
@@ -251,6 +264,25 @@ async function fetchRecommendedVideos() {
     return fetchTrendingVideos('US');
 }
 
+// Fetch related video IDs for a given video
+async function fetchRelatedVideoIds(videoId, maxResults = 10) {
+    try {
+        const apiKey = await YOUTUBE_CONFIG.getAPIKey();
+        const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=${maxResults}&type=video&relatedToVideoId=${encodeURIComponent(videoId)}&key=${apiKey}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        const ids = (data.items || [])
+            .map(it => it.id && it.id.videoId)
+            .filter(Boolean);
+        return ids;
+    } catch (e) {
+        console.warn('Failed to fetch related videos:', e);
+        return [];
+    }
+}
+
 async function searchVideos(query) {
     try {
         const videoContainer = document.getElementById('video-container');
@@ -296,6 +328,11 @@ async function searchVideos(query) {
                 
                 // Process and display search results
                 if (data.items && data.items.length > 0) {
+                    // Track current list from search results (by ID) for correct autoplay order
+                    appState.currentList = data.items
+                        .map(item => item && item.id && item.id.videoId)
+                        .filter(Boolean);
+                    appState.currentIndex = -1;
                     data.items.forEach(item => {
                         // Convert search result format to video format
                         const video = {
@@ -492,7 +529,9 @@ async function fetchChannelIcon(channelId, videoCard) {
 // Display Videos
 function displayVideos(videos) {
     console.log(`Displaying ${videos?.length || 0} videos`);
-    
+
+    // Do not override currentList here; it is set by the caller (search or trending)
+
     const videoContainer = document.getElementById('video-container');
     if (!videoContainer) {
         console.error('Video container not found');
@@ -516,17 +555,16 @@ function displayVideos(videos) {
         try {
             const videoData = video.snippet;
             const videoId = video.id?.videoId || video.id;
-            
             if (!videoData || !videoId) {
                 console.error(`Invalid video data at index ${index}:`, video);
                 return;
             }
-            
+
             const videoCard = document.createElement('div');
             videoCard.className = 'video-card';
             videoCard.dataset.videoId = videoId;
-            
-            // Ensure thumbnail URL exists
+            videoCard.dataset.videoIndex = String(index);
+
             const thumbnailUrl = videoData.thumbnails?.medium?.url || videoData.thumbnails?.default?.url || 'images/placeholder.jpg';
             
             videoCard.innerHTML = `
@@ -557,7 +595,11 @@ function displayVideos(videos) {
             // Add click handler
             videoCard.addEventListener('click', function() {
                 const id = this.dataset.videoId;
-                console.log('Video clicked:', id);
+                const idx = parseInt(this.dataset.videoIndex, 10);
+                console.log('Video clicked:', id, 'index:', idx);
+                if (typeof idx === 'number' && !isNaN(idx)) {
+                    appState.currentIndex = idx;
+                }
                 if (id) {
                     playVideo(id);
                 }
@@ -575,6 +617,7 @@ function displayVideos(videos) {
         }
     });
 }
+ 
 
 // Video Player
 let player = null;
@@ -590,18 +633,61 @@ function initializePlayerControls() {
     const backwardBtn = document.querySelector('.backward');
     const forwardBtn = document.querySelector('.forward');
     const volumeToggle = document.querySelector('.volume-toggle');
+    const autoplayToggle = document.querySelector('.autoplay-toggle');
     const progressBar = document.querySelector('.progress-bar');
     const fullscreenBtn = document.querySelector('.fullscreen');
     const currentTimeDisplay = document.querySelector('.current-time');
     const totalTimeDisplay = document.querySelector('.total-time');
+    const playerWrapper = document.querySelector('.player-wrapper');
 
     if (!playPauseBtn || !backwardBtn || !forwardBtn || !volumeToggle || !progressBar || !fullscreenBtn) {
         console.error('Player control elements not found');
         return;
     }
+    
+        // Prev/Next track buttons for playlist navigation
+        const prevTrackBtn = document.querySelector('.prev-track');
+        const nextTrackBtn = document.querySelector('.next-track');
+    
+        if (prevTrackBtn) {
+            prevTrackBtn.addEventListener('click', () => {
+                if (Array.isArray(appState.currentList) && appState.currentList.length > 0) {
+                    let idx = typeof appState.currentIndex === 'number' ? appState.currentIndex : -1;
+                    if (idx <= 0) return; // no previous
+                    idx = idx - 1;
+                    const prevId = appState.currentList[idx];
+                    if (prevId) {
+                        appState.currentIndex = idx;
+                        playVideo(prevId);
+                    }
+                }
+            });
+        }
+    
+        if (nextTrackBtn) {
+            nextTrackBtn.addEventListener('click', () => {
+                if (Array.isArray(appState.currentList) && appState.currentList.length > 0) {
+                    let idx = typeof appState.currentIndex === 'number' ? appState.currentIndex : -1;
+                    const nextIdx = idx + 1;
+                    if (nextIdx >= appState.currentList.length) return; // no next
+                    const nextId = appState.currentList[nextIdx];
+                    if (nextId) {
+                        appState.currentIndex = nextIdx;
+                        playVideo(nextId);
+                    }
+                }
+            });
+        }
 
     // Play/Pause
     playPauseBtn.addEventListener('click', () => {
+        appState.userInteracted = true;
+        if (player && player.unMute) {
+            player.unMute();
+            player.setVolume(100);
+            currentVolume = 1;
+            volumeToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+        }
         if (isPlaying) {
             player.pauseVideo();
             playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
@@ -625,12 +711,14 @@ function initializePlayerControls() {
 
     // Volume Control
     volumeToggle.addEventListener('click', () => {
+        appState.userInteracted = true;
         if (currentVolume > 0) {
             player.setVolume(0);
             currentVolume = 0;
             volumeToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
         } else {
-            player.setVolume(1);
+            if (player && player.unMute) player.unMute();
+            player.setVolume(100);
             currentVolume = 1;
             volumeToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
         }
@@ -652,6 +740,43 @@ function initializePlayerControls() {
             document.exitFullscreen();
         }
     });
+
+    // Clicking anywhere in the player area counts as interaction and unmutes
+    if (playerWrapper) {
+        playerWrapper.addEventListener('click', () => {
+            appState.userInteracted = true;
+            try {
+                if (player && player.unMute) {
+                    player.unMute();
+                    player.setVolume(100);
+                    currentVolume = 1;
+                    if (volumeToggle) {
+                        volumeToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+                    }
+                }
+            } catch (_) {}
+        }, { capture: true });
+    }
+
+    // Autoplay toggle
+    if (autoplayToggle) {
+        const icon = autoplayToggle.querySelector('i');
+        const setIcon = () => {
+            if (appState.autoplayEnabled) {
+                icon.classList.remove('fa-toggle-off');
+                icon.classList.add('fa-toggle-on');
+            } else {
+                icon.classList.remove('fa-toggle-on');
+                icon.classList.add('fa-toggle-off');
+            }
+        };
+        setIcon();
+        autoplayToggle.addEventListener('click', () => {
+            appState.autoplayEnabled = !appState.autoplayEnabled;
+            saveAutoplaySetting();
+            setIcon();
+        });
+    }
 
     // Update time display
     setInterval(() => {
@@ -696,20 +821,25 @@ function initYouTubePlayer() {
 
     console.log('Initializing YouTube player...');
     try {
+        // Build playerVars and only set origin when served over http/https (not file://)
+        const playerVars = {
+            'playsinline': 1,
+            'autoplay': 1,
+            'enablejsapi': 1,
+            'rel': 0,
+            'modestbranding': 1,
+            'showinfo': 0,
+            'controls': 0
+        };
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            playerVars.origin = window.location.origin;
+            playerVars.widget_referrer = window.location.origin;
+        }
+
         player = new YT.Player('player', {
             width: '100%',
             height: '100%',
-            playerVars: {
-                'playsinline': 1,
-                'autoplay': 0,
-                'enablejsapi': 1,
-                'origin': window.location.origin,
-                'widget_referrer': window.location.origin,
-                'rel': 0,
-                'modestbranding': 1,
-                'showinfo': 0,
-                'controls': 0
-            },
+            playerVars,
             events: {
                 'onReady': onPlayerReady,
                 'onStateChange': onPlayerStateChange,
@@ -791,11 +921,97 @@ function onPlayerReady(event) {
     player = event.target;
     initializePlayerControls();
     showPlayerControls();
+
+    // Start muted to allow autoplay, unmute after user interaction
+    if (player && player.mute) {
+        player.mute();
+        currentVolume = 0;
+        const volumeToggle = document.querySelector('.volume-toggle');
+        if (volumeToggle) {
+            volumeToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
+        }
+        const resumeAudioOnFirstInteraction = () => {
+            if (!appState.userInteracted) return;
+            try {
+                if (player && player.unMute) {
+                    player.unMute();
+                    player.setVolume(100);
+                    currentVolume = 1;
+                    if (volumeToggle) {
+                        volumeToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+                    }
+                }
+            } catch (_) {}
+            document.removeEventListener('click', interactionHandler, true);
+            document.removeEventListener('keydown', interactionHandler, true);
+        };
+        const interactionHandler = () => {
+            appState.userInteracted = true;
+            resumeAudioOnFirstInteraction();
+        };
+        document.addEventListener('click', interactionHandler, true);
+        document.addEventListener('keydown', interactionHandler, true);
+    }
 }
 
 function onPlayerStateChange(event) {
     console.log('Player State Change:', event.data);
+    // If playback starts after user action, ensure unmuted and volume up
+    if (event.data === YT.PlayerState.PLAYING && appState.userInteracted) {
+        try {
+            if (player && player.unMute) {
+                player.unMute();
+                player.setVolume(100);
+                currentVolume = 1;
+                const volumeToggle = document.querySelector('.volume-toggle');
+                if (volumeToggle) {
+                    volumeToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+                }
+            }
+        } catch (_) {}
+    }
     if (event.data === YT.PlayerState.ENDED) {
+        // When video ends, if autoplay is enabled, try related videos first
+        if (appState.autoplayEnabled) {
+            const currentId = appState.currentVideo;
+            if (currentId) {
+                fetchRelatedVideoIds(currentId, 10).then((relatedIds) => {
+                    const uniqueNext = relatedIds.find(id => id && id !== currentId);
+                    if (uniqueNext) {
+                        console.log('Autoplaying related video:', uniqueNext);
+                        playVideo(uniqueNext);
+                        return;
+                    }
+                    // Fallback to next in currentList
+                    if (Array.isArray(appState.currentList) && appState.currentList.length > 0) {
+                        const nextIndex = (typeof appState.currentIndex === 'number' ? appState.currentIndex + 1 : 0);
+                        if (nextIndex < appState.currentList.length) {
+                            const nextVideoId = appState.currentList[nextIndex];
+                            appState.currentIndex = nextIndex;
+                            console.log('Autoplaying next in list:', nextVideoId, 'index:', nextIndex);
+                            playVideo(nextVideoId);
+                            return;
+                        }
+                    }
+                    closeVideoPlayer();
+                }).catch(() => {
+                    // On error, fallback to next in list
+                    if (Array.isArray(appState.currentList) && appState.currentList.length > 0) {
+                        const nextIndex = (typeof appState.currentIndex === 'number' ? appState.currentIndex + 1 : 0);
+                        if (nextIndex < appState.currentList.length) {
+                            const nextVideoId = appState.currentList[nextIndex];
+                            appState.currentIndex = nextIndex;
+                            console.log('Autoplaying next in list (fallback):', nextVideoId, 'index:', nextIndex);
+                            playVideo(nextVideoId);
+                            return;
+                        }
+                    }
+                    closeVideoPlayer();
+                });
+                return;
+            }
+        }
+        // Autoplay disabled or no current video
         closeVideoPlayer();
     }
 }
@@ -854,6 +1070,22 @@ function playVideo(videoId) {
         };
         addToHistory(videoId, videoData);
     }
+    // Mark user interaction since this is a click on a video card
+    appState.userInteracted = true;
+    appState.currentVideo = videoId;
+    // Set currentVideo and determine currentIndex
+    appState.currentVideo = videoId;
+    try {
+        const idxFromCard = videoCard ? parseInt(videoCard.dataset.videoIndex, 10) : NaN;
+        if (!isNaN(idxFromCard)) {
+            appState.currentIndex = idxFromCard;
+        } else if (appState.currentList && appState.currentList.length > 0) {
+            const found = appState.currentList.indexOf(videoId);
+            appState.currentIndex = found >= 0 ? found : appState.currentIndex;
+        }
+    } catch (e) {
+        console.warn('Could not determine video index for autoplay:', e);
+    }
     
     if (!playerReady || !player) {
         console.log('Player not ready, queueing video:', videoId);
@@ -865,7 +1097,33 @@ function playVideo(videoId) {
     try {
         console.log('Loading video:', videoId);
         showVideoPlayer();
-        player.loadVideoById(videoId);
+        if (appState.autoplayEnabled) {
+            player.loadVideoById(videoId);
+            if (player && player.playVideo) {
+                player.playVideo();
+                if (player && player.unMute) {
+                    player.unMute();
+                    player.setVolume(100);
+                    currentVolume = 1;
+                    const volumeToggle = document.querySelector('.volume-toggle');
+                    if (volumeToggle) {
+                        volumeToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
+                    }
+                }
+                isPlaying = true;
+                const playPauseBtn = document.querySelector('.play-pause');
+                if (playPauseBtn) {
+                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                }
+            }
+        } else {
+            player.cueVideoById(videoId);
+            isPlaying = false;
+            const playPauseBtn = document.querySelector('.play-pause');
+            if (playPauseBtn) {
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            }
+        }
         hideLoading();
     } catch (error) {
         console.error('Error playing video:', error);
