@@ -262,8 +262,8 @@
 }
 
 /* Smart TV Optimization */
-/* Smart TVs: 1920x1080, 3840x2160 (4K), and larger displays */
-@media only screen and (min-width: 1920px) {
+/* Smart TVs: Only apply to very large screens (TV-like displays) */
+@media only screen and (min-width: 2560px) {
     /* Smart TV Navigation */
     .navbar {
         height: 80px !important;
@@ -504,8 +504,8 @@
     }
 }
 
-/* Desktop View Override - Applied to screens larger than iPad Mini */
-@media only screen and (min-width: 1025px) and (max-width: 1919px) {
+/* Desktop View Override - Applied to Windows PC and regular desktop screens */
+@media only screen and (min-width: 1025px) and (max-width: 2559px) {
     .navbar {
         padding: 10px 2% !important;
         height: 60px !important;
@@ -539,21 +539,42 @@
     }
 
     .video-grid {
-        gap: 20px !important;
-        padding: 20px !important;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+        gap: 25px !important;
+        padding: 25px !important;
+        max-width: 1400px !important;
+        margin: 0 auto !important;
     }
 
     .video-card {
-        margin-bottom: 20px !important;
+        margin-bottom: 25px !important;
+        border-radius: 12px !important;
+        overflow: hidden !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    }
+
+    .video-card:hover {
+        transform: translateY(-4px) !important;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    .video-thumbnail {
+        height: 180px !important;
+        object-fit: cover !important;
     }
 
     .video-info {
-        padding: 12px !important;
+        padding: 15px !important;
     }
 
     .video-info h3 {
         font-size: 16px !important;
+        line-height: 1.4 !important;
         margin-bottom: 8px !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 2 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
     }
 
     .video-info p {

@@ -1844,8 +1844,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function handleSmartTVNavigation(e) {
-        // Only handle navigation on large screens (Smart TV)
-        if (window.innerWidth < 1920) return;
+        // Only handle navigation on very large screens (Smart TV)
+        if (window.innerWidth < 2560) return;
         
         switch(e.key) {
             case 'ArrowUp':
