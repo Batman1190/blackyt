@@ -1819,6 +1819,77 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // Smart TV Remote Control Navigation
+    let currentFocusIndex = 0;
+    let focusableElements = [];
+    
+    function updateFocusableElements() {
+        focusableElements = Array.from(document.querySelectorAll(
+            '.video-card, .control-button, .sidebar-add-to-queue-btn, .sidebar-play-now-btn, .search-box input, .voice-search-btn, .sidebar-search-input, .sidebar-search-btn, .sidebar-voice-btn, .clear-all-btn, .hide-sidebar-btn'
+        )).filter(el => !el.disabled && !el.hidden && el.offsetParent !== null);
+    }
+    
+    function setFocus(index) {
+        if (focusableElements.length === 0) return;
+        
+        // Remove previous focus
+        focusableElements.forEach(el => el.classList.remove('smart-tv-focused'));
+        
+        // Set new focus
+        currentFocusIndex = Math.max(0, Math.min(index, focusableElements.length - 1));
+        const focusedElement = focusableElements[currentFocusIndex];
+        focusedElement.classList.add('smart-tv-focused');
+        focusedElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    
+    function handleSmartTVNavigation(e) {
+        // Only handle navigation on large screens (Smart TV)
+        if (window.innerWidth < 1920) return;
+        
+        switch(e.key) {
+            case 'ArrowUp':
+                e.preventDefault();
+                setFocus(currentFocusIndex - 1);
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                setFocus(currentFocusIndex + 1);
+                break;
+            case 'ArrowLeft':
+                e.preventDefault();
+                setFocus(currentFocusIndex - 1);
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                setFocus(currentFocusIndex + 1);
+                break;
+            case 'Enter':
+            case ' ':
+                e.preventDefault();
+                const focusedElement = focusableElements[currentFocusIndex];
+                if (focusedElement) {
+                    focusedElement.click();
+                }
+                break;
+        }
+    }
+    
+    // Initialize Smart TV navigation
+    document.addEventListener('keydown', handleSmartTVNavigation);
+    
+    // Update focusable elements when content changes
+    const observer = new MutationObserver(() => {
+        updateFocusableElements();
+    });
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+    
+    // Initialize on page load
+    updateFocusableElements();
 });
 
 // Make functions globally available
