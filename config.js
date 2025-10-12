@@ -34,10 +34,23 @@ let currentKeyIndex = 0;
 let lastUsedKeyIndex = -1;
 let lastKeyUsageTime = 0;
 const MIN_KEY_USAGE_INTERVAL = 200; // Reduced to 200ms for better performance
+let keyUsageStats = new Map(); // Track usage per key
+let failedKeys = new Set(); // Track failed keys
 
 export const YOUTUBE_CONFIG = {
     async getAPIKey() {
         const now = Date.now();
+        
+        // Skip failed keys
+        while (failedKeys.has(currentKeyIndex)) {
+            currentKeyIndex = (currentKeyIndex + 1) % YOUTUBE_API_KEYS.length;
+            if (currentKeyIndex === lastUsedKeyIndex) {
+                // All keys failed, reset failed keys and try again
+                console.warn('All keys have failed, resetting failed keys list');
+                failedKeys.clear();
+                break;
+            }
+        }
         
         // If we've used all keys, start over
         if (currentKeyIndex === lastUsedKeyIndex) {
@@ -53,8 +66,12 @@ export const YOUTUBE_CONFIG = {
         lastUsedKeyIndex = currentKeyIndex;
         lastKeyUsageTime = now;
         
-        // Log the key rotation
-        console.log(`Using API key index: ${currentKeyIndex} (Total keys: ${YOUTUBE_API_KEYS.length})`);
+        // Track usage stats
+        const usageCount = keyUsageStats.get(currentKeyIndex) || 0;
+        keyUsageStats.set(currentKeyIndex, usageCount + 1);
+        
+        // Log the key rotation with usage stats
+        console.log(`Using API key index: ${currentKeyIndex} (Total keys: ${YOUTUBE_API_KEYS.length}, Usage: ${usageCount + 1})`);
         
         // Rotate to next key
         currentKeyIndex = (currentKeyIndex + 1) % YOUTUBE_API_KEYS.length;
@@ -76,5 +93,34 @@ export const YOUTUBE_CONFIG = {
     // Get current key index (for debugging)
     getCurrentKeyIndex() {
         return currentKeyIndex;
+    },
+    
+    // Mark a key as failed (for quota exceeded, etc.)
+    markKeyAsFailed(keyIndex) {
+        failedKeys.add(keyIndex);
+        console.log(`Marked key ${keyIndex} as failed. Failed keys: ${Array.from(failedKeys).join(', ')}`);
+    },
+    
+    // Get usage statistics
+    getUsageStats() {
+        const stats = {};
+        for (let i = 0; i < YOUTUBE_API_KEYS.length; i++) {
+            stats[i] = {
+                usageCount: keyUsageStats.get(i) || 0,
+                isFailed: failedKeys.has(i)
+            };
+        }
+        return stats;
+    },
+    
+    // Reset failed keys (useful for daily reset)
+    resetFailedKeys() {
+        failedKeys.clear();
+        console.log('Reset all failed keys');
+    },
+    
+    // Get available keys count
+    getAvailableKeysCount() {
+        return YOUTUBE_API_KEYS.length - failedKeys.size;
     }
 };

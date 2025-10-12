@@ -903,6 +903,11 @@ body {
     min-height: 28px;
 }
 
+/* Hide mobile close button on desktop */
+.mobile-close-queue-btn {
+    display: none;
+}
+
 .hide-sidebar-btn:hover {
     background: #5a6268;
     transform: translateY(-1px);
@@ -3143,28 +3148,29 @@ body {
         display: flex !important;
     }
     
-    /* Mobile queue sidebar close button */
-    .video-queue-sidebar .queue-sidebar-header::after {
-        content: '×';
-        position: absolute;
-        top: 10px;
-        right: 15px;
-        font-size: 24px;
+    /* Mobile queue sidebar close button - real button instead of pseudo-element */
+    .mobile-close-queue-btn {
+        display: flex !important; /* Show on mobile */
+        background: rgba(255, 255, 255, 0.1);
         color: var(--primary-color);
+        border: none;
+        border-radius: 50%;
+        padding: 8px;
         cursor: pointer;
-        z-index: 1003;
-        width: 30px;
-        height: 30px;
-        display: flex;
+        font-size: 18px;
+        transition: all 0.2s ease;
         align-items: center;
         justify-content: center;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.1);
-        transition: background-color 0.2s ease;
+        min-width: 44px;
+        min-height: 44px;
     }
     
-    .video-queue-sidebar .queue-sidebar-header::after:hover {
+    .mobile-close-queue-btn:hover {
         background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .mobile-close-queue-btn:active {
+        background: rgba(255, 255, 255, 0.3);
     }
 
     /* Full width content on mobile */
@@ -3564,11 +3570,11 @@ body {
         padding: 3px 8px;
     }
     
-    .clear-all-btn {
-        min-width: 28px;
-        min-height: 24px;
-        padding: 4px 6px;
-        font-size: 11px;
+    .clear-all-btn, .hide-sidebar-btn {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 8px;
+        font-size: 14px;
     }
     
     /* Mobile search improvements */

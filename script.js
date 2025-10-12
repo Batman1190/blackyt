@@ -1730,30 +1730,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Handle mobile queue sidebar close button
-    if (videoQueueSidebar) {
-        const queueHeader = videoQueueSidebar.querySelector('.queue-sidebar-header');
-        if (queueHeader) {
-            queueHeader.addEventListener('click', (e) => {
-                // Check if click is on the close button (::after pseudo-element)
-                const rect = queueHeader.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                const clickY = e.clientY - rect.top;
-                
-                // Close button is positioned at right: 15px, top: 10px with 30px width/height
-                const closeButtonX = rect.width - 15 - 30; // right: 15px + width: 30px
-                const closeButtonY = 10; // top: 10px
-                
-                if (clickX >= closeButtonX && clickX <= closeButtonX + 30 && 
-                    clickY >= closeButtonY && clickY <= closeButtonY + 30) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    videoQueueSidebar.classList.remove('active');
-                    document.body.style.overflow = 'auto';
-                    console.log('Mobile queue sidebar closed via close button');
-                }
-            });
-        }
+    // Handle mobile queue sidebar close button (real DOM element)
+    const mobileCloseQueueBtn = document.getElementById('mobile-close-queue-btn');
+    if (mobileCloseQueueBtn && videoQueueSidebar) {
+        mobileCloseQueueBtn.addEventListener('click', (e) => {
+            try {
+                e.preventDefault();
+                e.stopPropagation();
+                videoQueueSidebar.classList.remove('active');
+                document.body.style.overflow = 'auto';
+                console.log('Mobile queue sidebar closed via close button');
+            } catch (error) {
+                console.error('Error closing mobile queue sidebar:', error);
+            }
+        });
+    } else {
+        console.warn('Mobile close queue button not found');
     }
 
     // Functions are now defined at the top of the file
