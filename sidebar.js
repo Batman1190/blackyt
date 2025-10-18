@@ -52,11 +52,14 @@ function toggleSidebar() {
     } else {
         // Desktop view
         if (sidebar) sidebar.classList.toggle('collapsed');
-        if (content) content.style.marginLeft = isSidebarOpen ? '250px' : '70px';
+        
+        // Check actual state after toggle for clarity
+        const isCollapsed = sidebar ? sidebar.classList.contains('collapsed') : false;
+        if (content) content.style.marginLeft = isCollapsed ? '70px' : '250px';
         
         // Handle text visibility in sidebar links
         document.querySelectorAll('.nav-link span, .sidebar-image-link span').forEach(span => {
-            span.style.display = isSidebarOpen ? 'block' : 'none';
+            span.style.display = isCollapsed ? 'none' : 'block';
         });
     }
 }

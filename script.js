@@ -1882,6 +1882,46 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize on page load
     updateFocusableElements();
+    
+    // Handle home and trending navigation
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const page = link.getAttribute('data-page');
+            
+            if (page === 'home' || page === 'trending') {
+                // Get current region
+                const regionSelect = document.getElementById('region-select');
+                const selectedRegion = regionSelect ? regionSelect.value : 'US';
+                
+                // Fetch trending videos for the current region
+                fetchTrendingVideos(selectedRegion);
+                
+                // Update active state
+                document.querySelectorAll('.nav-link').forEach(navLink => {
+                    navLink.classList.remove('active');
+                });
+                link.classList.add('active');
+            }
+        });
+    });
+    
+    // Reset API keys daily
+    resetAPIKeysDaily();
+    
+    // Debug API key status
+    console.log('API Key Status:', {
+        totalKeys: YOUTUBE_CONFIG.getKeyCount(),
+        availableKeys: YOUTUBE_CONFIG.getAvailableKeysCount(),
+        currentIndex: YOUTUBE_CONFIG.getCurrentKeyIndex()
+    });
+    
+    // Load trending videos on page load
+    console.log('DOM loaded, fetching trending videos...');
+    setTimeout(() => {
+        console.log('Starting fetchTrendingVideos...');
+        fetchTrendingVideos('US');
+    }, 100);
 });
 
 // Make functions globally available
@@ -2718,31 +2758,7 @@ function displayHistory() {
     });
 }
 
-// Add navigation event listeners
-document.addEventListener('DOMContentLoaded', () => {
-    // Handle home and trending navigation
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const page = link.getAttribute('data-page');
-            
-            if (page === 'home' || page === 'trending') {
-                // Get current region
-                const regionSelect = document.getElementById('region-select');
-                const selectedRegion = regionSelect ? regionSelect.value : 'US';
-                
-                // Fetch trending videos for the current region
-                fetchTrendingVideos(selectedRegion);
-                
-                // Update active state
-                document.querySelectorAll('.nav-link').forEach(navLink => {
-                    navLink.classList.remove('active');
-                });
-                link.classList.add('active');
-            }
-        });
-    });
-});
+// Navigation event listeners will be added in the consolidated DOMContentLoaded below
 
 // Daily reset for API keys (reset failed keys every 24 hours)
 function resetAPIKeysDaily() {
@@ -2780,32 +2796,7 @@ function debugAPIKeys() {
 // Make debug function globally available
 window.debugAPIKeys = debugAPIKeys;
 
-// Load trending videos on page load
-console.log('Loading trending videos on page startup...');
-
-// Ensure videos load after DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, fetching trending videos...');
-    
-    // Reset API keys daily
-    resetAPIKeysDaily();
-    
-    // Debug API key status
-    console.log('API Key Status:', {
-        totalKeys: YOUTUBE_CONFIG.getKeyCount(),
-        availableKeys: YOUTUBE_CONFIG.getAvailableKeysCount(),
-        currentIndex: YOUTUBE_CONFIG.getCurrentKeyIndex()
-    });
-    
-    setTimeout(() => {
-        console.log('Starting fetchTrendingVideos...');
-        fetchTrendingVideos('US');
-    }, 100);
-});
-
-// Also try immediately
-console.log('Trying immediate fetchTrendingVideos...');
-fetchTrendingVideos('US');
+// Video loading will be handled in the consolidated DOMContentLoaded listener above
 
 // Test function to check if everything is working
 window.testVideoLoading = function() {
