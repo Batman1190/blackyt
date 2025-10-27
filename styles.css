@@ -539,7 +539,7 @@
     }
 
     .video-grid {
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+        grid-template-columns: repeat(3, 1fr) !important;
         gap: 25px !important;
         padding: 25px !important;
         max-width: 1400px !important;
