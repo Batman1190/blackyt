@@ -540,13 +540,17 @@
 
     .video-grid {
         /* Exactly 3 columns on desktop, allow down to 240px per card */
-        grid-template-columns: repeat(3, minmax(240px, 1fr)) !important;
-        gap: 20px !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 24px !important;
         padding: 20px !important;
-        /* Cap at 3 columns width (3 * 1fr + gaps) */
+        width: 100% !important;
         max-width: none !important;
-        margin: 0 auto !important;
+        margin: 0 !important;
     }
+
+    .video-card { width: 100% !important; }
+    .video-card .thumbnail { width: 100% !important; }
+    .video-card .thumbnail img { width: 100% !important; height: auto !important; display: block !important; }
 
     .video-card {
         margin-bottom: 25px !important;
@@ -1316,7 +1320,7 @@ body {
 /* When left sidebar is hidden */
 .content.left-sidebar-hidden {
     margin-left: 0;
-    width: calc(100% - 320px);
+    width: 100%;
 }
 
 .show-left-sidebar-btn {
@@ -2129,6 +2133,7 @@ body {
     max-width: 1280px;
     max-height: 720px;
     background: #000;
+    padding-bottom: 90px; /* Ensure controls never overlap off-screen */
 }
 
 #player {
@@ -2185,15 +2190,13 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
-    padding: 10px;
+    background: linear-gradient(rgba(0, 0, 0, 0.0), rgba(0, 0, 0, 0.85));
+    padding: 14px 12px 16px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    transition: opacity 0.3s ease;
+    gap: 10px;
     z-index: 1000;
-    /* Allow clicks to pass through the overlay except on actual controls */
-    pointer-events: none;
+    pointer-events: auto;
 }
 
 /* Re-enable pointer events on actual controls inside the overlay */
@@ -2377,6 +2380,7 @@ body {
     margin-right: 160px;
     pointer-events: auto;
     transition: transform 0.15s ease;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.35), 0 0 10px rgba(255, 0, 0, 0.25);
 }
 
 .progress-bar-fill {
@@ -2387,6 +2391,7 @@ body {
     background: #ff0000;
     border-radius: 4px;
     transition: width 0.1s linear;
+    box-shadow: 0 0 6px rgba(255, 0, 0, 0.6);
 }
 
 .progress-tooltip {
