@@ -119,22 +119,26 @@ function toggleSidebarVisibility() {
 function hideLeftSidebar() {
     const leftSidebar = document.querySelector('.sidebar');
     const content = document.querySelector('.content');
+    const showLeftBtn = document.getElementById('show-left-sidebar-btn');
     if (leftSidebar && content) {
         leftSidebar.classList.add('hidden-left');
         content.classList.add('left-sidebar-hidden');
         appState.leftSidebarHidden = true;
         saveLeftSidebarVisibility();
+        if (showLeftBtn) showLeftBtn.classList.remove('hidden');
     }
 }
 
 function showLeftSidebar() {
     const leftSidebar = document.querySelector('.sidebar');
     const content = document.querySelector('.content');
+    const showLeftBtn = document.getElementById('show-left-sidebar-btn');
     if (leftSidebar && content) {
         leftSidebar.classList.remove('hidden-left');
         content.classList.remove('left-sidebar-hidden');
         appState.leftSidebarHidden = false;
         saveLeftSidebarVisibility();
+        if (showLeftBtn) showLeftBtn.classList.add('hidden');
     }
 }
 
@@ -171,15 +175,32 @@ function updateMobileQueueBadge() {
 try {
     const leftSidebar = document.querySelector('.sidebar');
     const content = document.querySelector('.content');
+    const hideLeftBtn = document.getElementById('hide-left-sidebar-btn');
+    const showLeftBtn = document.getElementById('show-left-sidebar-btn');
     if (appState.leftSidebarHidden && leftSidebar && content) {
         leftSidebar.classList.add('hidden-left');
         content.classList.add('left-sidebar-hidden');
+        if (showLeftBtn) showLeftBtn.classList.remove('hidden');
+    } else {
+        if (showLeftBtn) showLeftBtn.classList.add('hidden');
     }
     const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
     if (mobileMenuToggle) {
         mobileMenuToggle.addEventListener('click', (e) => {
             e.preventDefault();
             toggleLeftSidebar();
+        });
+    }
+    if (hideLeftBtn) {
+        hideLeftBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            hideLeftSidebar();
+        });
+    }
+    if (showLeftBtn) {
+        showLeftBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            showLeftSidebar();
         });
     }
 } catch (_) {}

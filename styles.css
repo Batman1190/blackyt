@@ -816,6 +816,25 @@ body {
     transform: translateX(-100%);
 }
 
+.hide-left-sidebar-btn {
+    position: sticky;
+    top: 10px;
+    left: 10px;
+    margin: 0 0 10px 10px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 12px;
+    z-index: 1000;
+}
+
+.hide-left-sidebar-btn:hover {
+    background: #5a6268;
+}
+
 /* Video Queue Sidebar */
 .video-queue-sidebar {
     background: var(--background-color);
@@ -1298,6 +1317,39 @@ body {
 .content.left-sidebar-hidden {
     margin-left: 0;
     width: calc(100% - 320px);
+}
+
+.show-left-sidebar-btn {
+    position: fixed;
+    top: 50%;
+    left: 20px;
+    transform: translateY(-50%);
+    background: #3ea6ff;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(62, 166, 255, 0.3);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.show-left-sidebar-btn.hidden { display: none; }
+
+.show-left-sidebar-btn:hover {
+    background: #2d8ce6;
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 6px 16px rgba(62, 166, 255, 0.4);
+}
+
+.show-left-sidebar-btn:active {
+    transform: translateY(-50%) scale(0.95);
 }
 
 /* Hidden sidebar state */
