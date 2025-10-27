@@ -36,6 +36,49 @@ function loadWatchHistory() {
     return history ? JSON.parse(history) : [];
 }
 
+// Fetch channel ID by channel name
+async function fetchChannelIdByName(channelName) {
+    const apiKey = await YOUTUBE_CONFIG.getAPIKey();
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(channelName)}&maxResults=1&key=${apiKey}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Channel search failed: ${res.status}`);
+    const data = await res.json();
+    const item = data.items && data.items[0];
+    if (!item || !item.id || !item.id.channelId) throw new Error('Channel not found');
+    return item.id.channelId;
+}
+
+// Fetch recent videos for a channel ID
+async function fetchChannelVideosById(channelId, maxResults = 24) {
+    const apiKey = await YOUTUBE_CONFIG.getAPIKey();
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&order=date&type=video&maxResults=${maxResults}&key=${apiKey}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Channel videos fetch failed: ${res.status}`);
+    const data = await res.json();
+    return data.items || [];
+}
+
+// Default landing feed: Tsanelkoto
+async function fetchDefaultLandingVideos() {
+    console.log('Loading default landing videos: Tsanelkoto');
+    try {
+        const channelId = await fetchChannelIdByName('Tsanelkoto');
+        const items = await fetchChannelVideosById(channelId, 24);
+        if (!items.length) throw new Error('No videos from channel');
+        // Normalize to match displayVideos expected structure
+        const normalized = items.map(it => ({
+            id: it.id.videoId,
+            snippet: it.snippet
+        })).filter(v => v.id);
+        appState.currentList = normalized.map(v => v.id);
+        appState.currentIndex = -1;
+        displayVideos(normalized);
+    } catch (err) {
+        console.warn('Default channel load failed, falling back to trending:', err.message);
+        await fetchTrendingVideos('US');
+    }
+}
+
 // Save watch history to storage
 function saveWatchHistory() {
     localStorage.setItem('watchHistory', JSON.stringify(appState.watchHistory));
@@ -1566,8 +1609,8 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             // Close video player if open
             closeVideoPlayer();
-            // Load trending videos
-            fetchTrendingVideos('US');
+            // Load default channel videos
+            fetchDefaultLandingVideos();
         });
     }
 
@@ -1579,8 +1622,8 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             e.stopPropagation();
             closeVideoPlayer();
-            // Optionally refresh the video list
-            fetchTrendingVideos('US');
+            // Refresh with default channel videos
+            fetchDefaultLandingVideos();
         });
         
         // Add debugging info
@@ -1963,12 +2006,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const page = link.getAttribute('data-page');
             
             if (page === 'home' || page === 'trending') {
-                // Get current region
-                const regionSelect = document.getElementById('region-select');
-                const selectedRegion = regionSelect ? regionSelect.value : 'US';
-                
-                // Fetch trending videos for the current region
-                fetchTrendingVideos(selectedRegion);
+                if (page === 'home') {
+                    // Default landing feed from channel
+                    fetchDefaultLandingVideos();
+                } else {
+                    // Get current region
+                    const regionSelect = document.getElementById('region-select');
+                    const selectedRegion = regionSelect ? regionSelect.value : 'US';
+                    // Trending for the selected region
+                    fetchTrendingVideos(selectedRegion);
+                }
                 
                 // Update active state
                 document.querySelectorAll('.nav-link').forEach(navLink => {
@@ -1989,11 +2036,11 @@ document.addEventListener('DOMContentLoaded', function() {
         currentIndex: YOUTUBE_CONFIG.getCurrentKeyIndex()
     });
     
-    // Load trending videos on page load
-    console.log('DOM loaded, fetching trending videos...');
+    // Load default channel videos on page load
+    console.log('DOM loaded, fetching default channel videos (Tsanelkoto)...');
     setTimeout(() => {
-        console.log('Starting fetchTrendingVideos...');
-        fetchTrendingVideos('US');
+        console.log('Starting fetchDefaultLandingVideos...');
+        fetchDefaultLandingVideos();
     }, 100);
 });
 
@@ -2358,6 +2405,15 @@ function initializePlayerControls() {
     const progressFill = document.querySelector('.progress-bar-fill');
     let isDraggingProgress = false;
 
+    // Progress tooltip
+    let progressTooltip = null;
+    if (progressBar) {
+        progressTooltip = document.createElement('div');
+        progressTooltip.className = 'progress-tooltip';
+        progressTooltip.textContent = '0:00';
+        progressBar.appendChild(progressTooltip);
+    }
+
     const calcPos = (clientX) => {
         const rect = progressBar.getBoundingClientRect();
         const raw = (clientX - rect.left) / rect.width;
@@ -2390,6 +2446,42 @@ function initializePlayerControls() {
         seekToPos(pos);
         e.preventDefault();
     });
+
+    // Tooltip hover updates
+    if (progressBar) {
+        progressBar.addEventListener('mouseenter', () => {
+            if (progressTooltip) progressTooltip.classList.add('visible');
+        });
+        progressBar.addEventListener('mouseleave', () => {
+            if (progressTooltip) progressTooltip.classList.remove('visible');
+        });
+        progressBar.addEventListener('mousemove', (e) => {
+            if (!progressTooltip) return;
+            const duration = player && player.getDuration ? player.getDuration() : 0;
+            const pos = calcPos(e.clientX);
+            const seconds = duration && isFinite(duration) ? pos * duration : 0;
+            progressTooltip.textContent = formatTime(seconds);
+            progressTooltip.style.left = `${pos * 100}%`;
+        });
+        // Touch move (show tooltip near finger)
+        progressBar.addEventListener('touchstart', (e) => {
+            if (!progressTooltip || !e.touches || !e.touches[0]) return;
+            progressTooltip.classList.add('visible');
+            const pos = calcPos(e.touches[0].clientX);
+            progressTooltip.style.left = `${pos * 100}%`;
+        }, { passive: true });
+        progressBar.addEventListener('touchmove', (e) => {
+            if (!progressTooltip || !e.touches || !e.touches[0]) return;
+            const duration = player && player.getDuration ? player.getDuration() : 0;
+            const pos = calcPos(e.touches[0].clientX);
+            const seconds = duration && isFinite(duration) ? pos * duration : 0;
+            progressTooltip.textContent = formatTime(seconds);
+            progressTooltip.style.left = `${pos * 100}%`;
+        }, { passive: true });
+        progressBar.addEventListener('touchend', () => {
+            if (progressTooltip) progressTooltip.classList.remove('visible');
+        }, { passive: true });
+    }
 
     document.addEventListener('mousemove', (e) => {
         if (!isDraggingProgress) return;

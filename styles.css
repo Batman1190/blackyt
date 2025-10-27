@@ -539,12 +539,12 @@
     }
 
     .video-grid {
-        /* Responsive columns that won't shrink below 300px */
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
-        gap: 25px !important;
-        padding: 25px !important;
-        /* Cap at 3 columns width (3 * 300px + 2 gaps of 25px) */
-        max-width: calc(900px + 50px) !important;
+        /* Exactly 3 columns on desktop, allow down to 240px per card */
+        grid-template-columns: repeat(3, minmax(240px, 1fr)) !important;
+        gap: 20px !important;
+        padding: 20px !important;
+        /* Cap at 3 columns width (3 * 1fr + gaps) */
+        max-width: none !important;
         margin: 0 auto !important;
     }
 
@@ -1305,12 +1305,12 @@ body {
 
 .content {
     margin-left: 250px;
-    margin-right: 320px;
+    margin-right: 0;
     padding: 20px;
     transition: margin-left 0.3s ease, margin-right 0.3s ease;
     min-height: calc(100vh - 60px);
     background-color: var(--background-color);
-    width: calc(100% - 570px);
+    width: calc(100% - 250px);
 }
 
 /* When left sidebar is hidden */
@@ -2367,15 +2367,16 @@ body {
 
 .progress-bar {
     flex: 1;
-    height: 4px;
+    height: 8px;
     background: rgba(255, 255, 255, 0.2);
-    border-radius: 2px;
+    border-radius: 4px;
     cursor: pointer;
     position: relative;
     margin: 0 10px;
     /* Keep some space on the right so YouTube's Skip Ads stays clickable */
     margin-right: 160px;
     pointer-events: auto;
+    transition: transform 0.15s ease;
 }
 
 .progress-bar-fill {
@@ -2384,8 +2385,32 @@ body {
     left: 0;
     height: 100%;
     background: #ff0000;
-    border-radius: 2px;
+    border-radius: 4px;
     transition: width 0.1s linear;
+}
+
+.progress-tooltip {
+    position: absolute;
+    bottom: 100%;
+    transform: translateX(-50%);
+    padding: 4px 6px;
+    background: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    font-size: 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    margin-bottom: 6px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+.progress-tooltip.visible {
+    opacity: 1;
+}
+
+.progress-bar:hover {
+    transform: scaleY(1.35);
 }
 
 .time-display {
@@ -3622,11 +3647,11 @@ body {
     
     /* Mobile-friendly progress bar */
     .progress-bar {
-        height: 6px;
+        height: 8px;
     }
     
     .progress-bar-fill {
-        height: 6px;
+        height: 8px;
     }
     
     /* Mobile-friendly time display */
