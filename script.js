@@ -2407,16 +2407,9 @@ function initializePlayerControls() {
 
     // Progress Bar - click and drag to seek (mouse + touch)
     const progressFill = document.querySelector('.progress-bar-fill');
+    const progressScrubber = document.querySelector('.progress-bar-scrubber');
+    const progressTooltip = document.querySelector('.progress-bar-tooltip') || document.querySelector('.progress-tooltip');
     let isDraggingProgress = false;
-
-    // Progress tooltip
-    let progressTooltip = null;
-    if (progressBar) {
-        progressTooltip = document.createElement('div');
-        progressTooltip.className = 'progress-tooltip';
-        progressTooltip.textContent = '0:00';
-        progressBar.appendChild(progressTooltip);
-    }
 
     const calcPos = (clientX) => {
         const rect = progressBar.getBoundingClientRect();
@@ -2432,7 +2425,9 @@ function initializePlayerControls() {
     };
 
     const updateFillToPos = (pos) => {
-        if (progressFill) progressFill.style.width = `${pos * 100}%`;
+        const pct = `${pos * 100}%`;
+        if (progressFill) progressFill.style.width = pct;
+        if (progressScrubber) progressScrubber.style.left = pct;
     };
 
     // Click seek
@@ -2577,7 +2572,7 @@ function initializePlayerControls() {
         });
     }
 
-    // Update time display and progress fill (faster updates, pause while dragging)
+    // Update time display, progress fill, and scrubber (faster updates, pause while dragging)
     setInterval(() => {
         if (!player || !player.getCurrentTime) return;
         const duration = player.getDuration();
@@ -2593,6 +2588,9 @@ function initializePlayerControls() {
                 progressFill.style.width = `${ratio * 100}%`;
                 // Near end cue: turn fill to yellow in the last 10%
                 progressFill.style.background = (1 - ratio) <= 0.1 ? '#ffcc00' : '#ff0000';
+            }
+            if (progressScrubber) {
+                progressScrubber.style.left = `${ratio * 100}%`;
             }
         }
     }, 250);
