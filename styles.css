@@ -539,9 +539,9 @@
     }
 
     .video-grid {
-        /* Exactly 3 columns on desktop, allow down to 240px per card */
-        grid-template-columns: repeat(3, 1fr) !important;
-        gap: 24px !important;
+        /* Exactly 3 larger columns on desktop */
+        grid-template-columns: repeat(3, minmax(420px, 1fr)) !important;
+        gap: 32px !important;
         padding: 20px !important;
         width: 100% !important;
         max-width: none !important;
@@ -549,8 +549,8 @@
     }
 
     .video-card { width: 100% !important; }
-    .video-card .thumbnail { width: 100% !important; }
-    .video-card .thumbnail img { width: 100% !important; height: auto !important; display: block !important; }
+    .video-card .thumbnail { width: 100% !important; aspect-ratio: 16 / 9 !important; }
+    .video-card .thumbnail img { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; }
 
     .video-card {
         margin-bottom: 25px !important;

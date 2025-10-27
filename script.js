@@ -2036,6 +2036,9 @@ document.addEventListener('DOMContentLoaded', function() {
         currentIndex: YOUTUBE_CONFIG.getCurrentKeyIndex()
     });
     
+    // Ensure player controls are initialized (fallback)
+    try { if (!controlsInitialized) initializePlayerControls(); } catch (_) {}
+
     // Load default channel videos on page load
     console.log('DOM loaded, fetching default channel videos (Tsanelkoto)...');
     setTimeout(() => {
@@ -2304,6 +2307,7 @@ const videoQueue = [];
 // Video Player Controls
 let isPlaying = false;
 let currentVolume = 1;
+let controlsInitialized = false;
 
 function initializePlayerControls() {
     const playPauseBtn = document.querySelector('.play-pause');
@@ -2592,6 +2596,8 @@ function initializePlayerControls() {
             }
         }
     }, 250);
+
+    controlsInitialized = true;
 }
 
 function formatTime(seconds) {
@@ -2854,6 +2860,10 @@ function showVideoPlayer() {
     if (videoPlayerContainer) {
         videoPlayerContainer.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
+        if (!controlsInitialized) {
+            // Initialize controls in case onPlayerReady is delayed
+            try { initializePlayerControls(); } catch (_) {}
+        }
     }
 }
 
