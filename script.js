@@ -26,7 +26,8 @@ const appState = {
     // Search results for video reservation
     searchResults: [],
     // Sidebar visibility state
-    sidebarHidden: JSON.parse(localStorage.getItem('sidebarHidden') || 'false')
+    sidebarHidden: JSON.parse(localStorage.getItem('sidebarHidden') || 'false'),
+    leftSidebarHidden: JSON.parse(localStorage.getItem('leftSidebarHidden') || 'false')
 };
 
 // Load watch history from storage
@@ -46,6 +47,10 @@ function saveAutoplaySetting() {
 
 function saveSidebarVisibility() {
     localStorage.setItem('sidebarHidden', JSON.stringify(appState.sidebarHidden));
+}
+
+function saveLeftSidebarVisibility() {
+    localStorage.setItem('leftSidebarHidden', JSON.stringify(appState.leftSidebarHidden));
 }
 
 // Sidebar visibility management
@@ -111,6 +116,36 @@ function toggleSidebarVisibility() {
     }
 }
 
+function hideLeftSidebar() {
+    const leftSidebar = document.querySelector('.sidebar');
+    const content = document.querySelector('.content');
+    if (leftSidebar && content) {
+        leftSidebar.classList.add('hidden-left');
+        content.classList.add('left-sidebar-hidden');
+        appState.leftSidebarHidden = true;
+        saveLeftSidebarVisibility();
+    }
+}
+
+function showLeftSidebar() {
+    const leftSidebar = document.querySelector('.sidebar');
+    const content = document.querySelector('.content');
+    if (leftSidebar && content) {
+        leftSidebar.classList.remove('hidden-left');
+        content.classList.remove('left-sidebar-hidden');
+        appState.leftSidebarHidden = false;
+        saveLeftSidebarVisibility();
+    }
+}
+
+function toggleLeftSidebar() {
+    if (appState.leftSidebarHidden) {
+        showLeftSidebar();
+    } else {
+        hideLeftSidebar();
+    }
+}
+
 // Video Queue Management
 function saveVideoQueue() {
     localStorage.setItem('videoQueue', JSON.stringify(appState.videoQueue));
@@ -131,6 +166,23 @@ function updateMobileQueueBadge() {
         console.error('Error updating mobile queue badge:', error);
     }
 }
+
+// Apply initial left sidebar state and bind toggle
+try {
+    const leftSidebar = document.querySelector('.sidebar');
+    const content = document.querySelector('.content');
+    if (appState.leftSidebarHidden && leftSidebar && content) {
+        leftSidebar.classList.add('hidden-left');
+        content.classList.add('left-sidebar-hidden');
+    }
+    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+    if (mobileMenuToggle) {
+        mobileMenuToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleLeftSidebar();
+        });
+    }
+} catch (_) {}
 
 // Update mini queue display (placeholder function)
 function updateMiniQueueDisplay() {

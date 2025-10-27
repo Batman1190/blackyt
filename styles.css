@@ -539,10 +539,12 @@
     }
 
     .video-grid {
-        grid-template-columns: repeat(3, 1fr) !important;
+        /* Responsive columns that won't shrink below 300px */
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
         gap: 25px !important;
         padding: 25px !important;
-        max-width: 1400px !important;
+        /* Cap at 3 columns width (3 * 300px + 2 gaps of 25px) */
+        max-width: calc(900px + 50px) !important;
         margin: 0 auto !important;
     }
 
@@ -807,6 +809,11 @@ body {
     transition: transform 0.3s ease, width 0.3s ease;
     z-index: 99;
     will-change: transform;
+}
+
+/* Hidden left sidebar state */
+.sidebar.hidden-left {
+    transform: translateX(-100%);
 }
 
 /* Video Queue Sidebar */
@@ -1287,6 +1294,12 @@ body {
     width: calc(100% - 570px);
 }
 
+/* When left sidebar is hidden */
+.content.left-sidebar-hidden {
+    margin-left: 0;
+    width: calc(100% - 320px);
+}
+
 /* Hidden sidebar state */
 .video-queue-sidebar.hidden {
     transform: translateX(100%);
@@ -1297,6 +1310,13 @@ body {
 .content.sidebar-hidden {
     margin-right: 0;
     width: calc(100% - 250px);
+}
+
+/* When both left and right sidebars are hidden */
+.content.sidebar-hidden.left-sidebar-hidden {
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
 }
 
 /* Show sidebar button */
