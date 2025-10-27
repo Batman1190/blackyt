@@ -30,6 +30,7 @@ app.use((req, res, next) => {
 // Environment variables
 const PORT = process.env.PORT || 3000; // Changed to port 3000 for local development
 const NODE_ENV = process.env.NODE_ENV || 'development'; // Changed to development mode
+const DEFAULT_DOMAIN = 'ramdor.space';
 
 // Create logs directory if it doesn't exist
 const logsDir = path.join(__dirname, 'logs');
@@ -122,12 +123,46 @@ app.use((req, res, next) => {
     next();
 });
 
+// Dynamic robots.txt
+app.get('/robots.txt', (req, res) => {
+    const host = req.headers.host || DEFAULT_DOMAIN;
+    res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: https://${host}/sitemap.xml\n`);
+});
+
+// Dynamic sitemap.xml
+app.get('/sitemap.xml', (req, res) => {
+    const host = req.headers.host || DEFAULT_DOMAIN;
+    const lastmod = new Date().toISOString().split('T')[0];
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+      `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+      `  <url>\n` +
+      `    <loc>https://${host}/</loc>\n` +
+      `    <lastmod>${lastmod}</lastmod>\n` +
+      `    <changefreq>daily</changefreq>\n` +
+      `    <priority>1.0</priority>\n` +
+      `  </url>\n` +
+      `</urlset>`;
+    res.type('application/xml').send(xml);
+});
+
 // Serve static files
 app.use(express.static(path.join(__dirname)));
 
-// Serve index.html for all routes
-app.get('*', (req, res) => {
+// Serve index.html for root path only
+app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// 404 handler for unknown routes
+app.use((req, res) => {
+    res.status(404).type('text/html').send(
+        `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>404 Not Found</title>` +
+        `<meta name="robots" content="noindex"><meta name="viewport" content="width=device-width, initial-scale=1">` +
+        `</head><body style="font-family: Arial, sans-serif; padding:40px; color:#eee; background:#111">` +
+        `<h1 style="margin:0 0 8px">404 — Page Not Found</h1>` +
+        `<p>The page you requested does not exist. <a href="/" style="color:#4ea1ff">Go back home</a>.</p>` +
+        `</body></html>`
+    );
 });
 
 // Start server
