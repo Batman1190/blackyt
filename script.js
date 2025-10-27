@@ -2281,12 +2281,77 @@ function initializePlayerControls() {
         }
     });
 
-    // Progress Bar
-    progressBar.addEventListener('click', (e) => {
+    // Progress Bar - click and drag to seek (mouse + touch)
+    const progressFill = document.querySelector('.progress-bar-fill');
+    let isDraggingProgress = false;
+
+    const calcPos = (clientX) => {
         const rect = progressBar.getBoundingClientRect();
-        const pos = (e.clientX - rect.left) / rect.width;
-        player.seekTo(pos * player.getDuration(), true);
+        const raw = (clientX - rect.left) / rect.width;
+        return Math.max(0, Math.min(1, raw));
+    };
+
+    const seekToPos = (pos) => {
+        if (!player || !player.getDuration) return;
+        const duration = player.getDuration();
+        if (!duration || !isFinite(duration)) return;
+        player.seekTo(pos * duration, true);
+    };
+
+    const updateFillToPos = (pos) => {
+        if (progressFill) progressFill.style.width = `${pos * 100}%`;
+    };
+
+    // Click seek
+    progressBar.addEventListener('click', (e) => {
+        const pos = calcPos(e.clientX);
+        updateFillToPos(pos);
+        seekToPos(pos);
     });
+
+    // Mouse drag
+    progressBar.addEventListener('mousedown', (e) => {
+        isDraggingProgress = true;
+        const pos = calcPos(e.clientX);
+        updateFillToPos(pos);
+        seekToPos(pos);
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDraggingProgress) return;
+        const pos = calcPos(e.clientX);
+        updateFillToPos(pos);
+        seekToPos(pos);
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isDraggingProgress) {
+            isDraggingProgress = false;
+        }
+    });
+
+    // Touch drag
+    progressBar.addEventListener('touchstart', (e) => {
+        if (!e.touches || !e.touches[0]) return;
+        isDraggingProgress = true;
+        const pos = calcPos(e.touches[0].clientX);
+        updateFillToPos(pos);
+        seekToPos(pos);
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+        if (!isDraggingProgress || !e.touches || !e.touches[0]) return;
+        const pos = calcPos(e.touches[0].clientX);
+        updateFillToPos(pos);
+        seekToPos(pos);
+    }, { passive: true });
+
+    document.addEventListener('touchend', () => {
+        if (isDraggingProgress) {
+            isDraggingProgress = false;
+        }
+    }, { passive: true });
 
     // Fullscreen
     fullscreenBtn.addEventListener('click', () => {
@@ -2343,20 +2408,25 @@ function initializePlayerControls() {
         });
     }
 
-    // Update time display
+    // Update time display and progress fill (faster updates, pause while dragging)
     setInterval(() => {
-        if (player && player.getCurrentTime) {
-            const currentTime = player.getCurrentTime();
-            const duration = player.getDuration();
-            
-            currentTimeDisplay.textContent = formatTime(currentTime);
-            totalTimeDisplay.textContent = formatTime(duration);
-            
-            // Update progress bar
-            const progress = (currentTime / duration) * 100;
-            document.querySelector('.progress-bar-fill').style.width = `${progress}%`;
+        if (!player || !player.getCurrentTime) return;
+        const duration = player.getDuration();
+        if (!duration || !isFinite(duration)) return;
+        const currentTime = player.getCurrentTime();
+
+        currentTimeDisplay.textContent = formatTime(currentTime);
+        totalTimeDisplay.textContent = formatTime(duration);
+
+        if (!isDraggingProgress) {
+            const ratio = currentTime / duration;
+            if (progressFill) {
+                progressFill.style.width = `${ratio * 100}%`;
+                // Near end cue: turn fill to yellow in the last 10%
+                progressFill.style.background = (1 - ratio) <= 0.1 ? '#ffcc00' : '#ff0000';
+            }
         }
-    }, 1000);
+    }, 250);
 }
 
 function formatTime(seconds) {
